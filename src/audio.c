@@ -234,7 +234,7 @@ void Audio_StopMusic(AudioSystem *_Audio)
     _Audio->currentMusic = NULL;
 }
 
-void Audio_UpdateMusicForState(AudioSystem *_Audio, int _GameState, int _MpState)
+void Audio_UpdateMusicForState(AudioSystem *_Audio, int _GameState, int _MpState, bool _MenuMusicEnabled, bool _GameMusicEnabled)
 {
     if (!_Audio->initialized)
         return;
@@ -244,26 +244,38 @@ void Audio_UpdateMusicForState(AudioSystem *_Audio, int _GameState, int _MpState
     if (_GameState == (int)GAME_PLAYING)
     {
         // Singleplayer gameplay
-        Audio_PlayGameMusic(_Audio);
+        if (_GameMusicEnabled)
+            Audio_PlayGameMusic(_Audio);
+        else
+            Audio_StopMusic(_Audio);
     }
     else if (_GameState == (int)GAME_MULTIPLAYER)
     {
         if (_MpState == (int)MP_STATE_PLAYING || _MpState == (int)MP_STATE_COUNTDOWN)
         {
             // Multiplayer gameplay
-            Audio_PlayMultiplayerMusic(_Audio);
+            if (_GameMusicEnabled)
+                Audio_PlayMultiplayerMusic(_Audio);
+            else
+                Audio_StopMusic(_Audio);
         }
         else
         {
             // Multiplayer menus (browsing, lobby, etc.)
-            Audio_PlayMenuMusic(_Audio);
+            if (_MenuMusicEnabled)
+                Audio_PlayMenuMusic(_Audio);
+            else
+                Audio_StopMusic(_Audio);
         }
     }
     else if (_GameState == (int)GAME_MAIN_MENU || _GameState == (int)GAME_NAME_INPUT ||
              _GameState == (int)GAME_MENU || _GameState == (int)GAME_OVER ||
-             _GameState == (int)GAME_SCOREBOARD)
+             _GameState == (int)GAME_SCOREBOARD || _GameState == (int)GAME_OPTIONS)
     {
         // Menus and game over
-        Audio_PlayMenuMusic(_Audio);
+        if (_MenuMusicEnabled)
+            Audio_PlayMenuMusic(_Audio);
+        else
+            Audio_StopMusic(_Audio);
     }
 }

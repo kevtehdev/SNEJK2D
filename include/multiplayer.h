@@ -125,6 +125,7 @@ void Multiplayer_HostBroadcastState(MultiplayerContext *_Ctx);
 // Client operations
 int Multiplayer_Join(MultiplayerContext *_Ctx, const char *_SessionId, const char *_PlayerName);
 void Multiplayer_ClientSendInput(MultiplayerContext *_Ctx, Direction _Dir);
+void Multiplayer_SendQuickPositionUpdate(MultiplayerContext *_Ctx);
 int Multiplayer_BrowseGames(MultiplayerContext *_Ctx);
 
 // Common operations

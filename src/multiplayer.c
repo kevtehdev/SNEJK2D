@@ -282,6 +282,13 @@ static void mpapiEventCallback(const char *event, int64_t messageId, const char 
                 printf("✓ Chat message received from other player: %s\n", message);
             }
         }
+        else if (strcmp(msgType, "host_disconnect") == 0)
+        {
+            // Host is disconnecting - all clients should disconnect
+            printf("✓ Host disconnected - returning to main menu\n");
+            ctx->state = MP_STATE_DISCONNECTED;
+            strncpy(ctx->errorMessage, "Host disconnected", sizeof(ctx->errorMessage) - 1);
+        }
         else if (strcmp(msgType, "nick_change") == 0)
         {
             // Nickname change from another player
@@ -401,10 +408,11 @@ int Multiplayer_Host(MultiplayerContext *_Ctx, const char *_PlayerName)
     printf("DEBUG: selectedBackground = %d (%s)\n", _Ctx->selectedBackground,
            mapNames[_Ctx->selectedBackground % 5]);
 
-    // Format room name with student number only (map shown separately)
+    // Format room name with student number AND map ID encoded in the name
+    // Format: [67] roomname |m2| where 2 is the map ID
     char nameWithId[128];
-    snprintf(nameWithId, sizeof(nameWithId), "[%s] %s",
-             STUDENT_NUMBER, _Ctx->roomName);
+    snprintf(nameWithId, sizeof(nameWithId), "[%s] %s |m%d|",
+             STUDENT_NUMBER, _Ctx->roomName, _Ctx->selectedBackground);
 
     json_t *hostData = json_object();
     json_object_set_new(hostData, "name", json_string(nameWithId));
@@ -849,6 +857,11 @@ void Multiplayer_ClientSendInput(MultiplayerContext *_Ctx, Direction _Dir)
     if (!_Ctx || !_Ctx->api || _Ctx->isHost)
         return;
 
+    int localIdx = Multiplayer_GetLocalPlayerIndex(_Ctx);
+    if (localIdx < 0 || !_Ctx->players[localIdx].alive)
+        return;
+
+    // Send input to server for validation and broadcast
     json_t *message = json_object();
     json_object_set_new(message, "type", json_string("input"));
     json_object_set_new(message, "clientId", json_string(_Ctx->ourClientId));
@@ -861,9 +874,14 @@ void Multiplayer_ClientSendInput(MultiplayerContext *_Ctx, Direction _Dir)
     }
 
     json_decref(message);
+}
 
-    // DO NOT update locally - client receives authoritative state from host
-    // This prevents the bug where both snakes respond to one client's input
+// Send lightweight position update for smooth rendering
+void Multiplayer_SendQuickPositionUpdate(MultiplayerContext *_Ctx)
+{
+    // Disabled - caused jittery gameplay
+    // Position updates are now handled by full state broadcasts only
+    (void)_Ctx;
 }
 
 // Start game
@@ -1096,11 +1114,12 @@ json_t* Multiplayer_SerializeState(MultiplayerContext *_Ctx)
         json_object_set_new(player, "combo_count", json_integer(_Ctx->players[i].comboCount));
         json_object_set_new(player, "combo_multiplier", json_real(_Ctx->players[i].comboMultiplier));
 
-        // Snake
+        // Snake - send all segments for reliable multiplayer sync
         json_t *snake = json_object();
         json_object_set_new(snake, "length", json_integer(_Ctx->players[i].snake.length));
         json_object_set_new(snake, "direction", json_integer((int)_Ctx->players[i].snake.direction));
 
+        // Send all segments
         json_t *segments = json_array();
         for (int j = 0; j < _Ctx->players[i].snake.length; j++)
         {
@@ -1110,6 +1129,7 @@ json_t* Multiplayer_SerializeState(MultiplayerContext *_Ctx)
             json_array_append_new(segments, seg);
         }
         json_object_set_new(snake, "segments", segments);
+
         json_object_set_new(player, "snake", snake);
 
         json_array_append_new(playersArray, player);
@@ -1190,12 +1210,15 @@ void Multiplayer_DeserializeState(MultiplayerContext *_Ctx, json_t *_Data)
                 _Ctx->players[playerIdx].name[sizeof(_Ctx->players[playerIdx].name) - 1] = '\0';
             }
 
-            // Snake
+            // Snake - full segments array
             json_t *snakeObj = json_object_get(playerObj, "snake");
             if (snakeObj)
             {
-                _Ctx->players[playerIdx].snake.length = json_integer_value(json_object_get(snakeObj, "length"));
-                _Ctx->players[playerIdx].snake.direction = (Direction)json_integer_value(json_object_get(snakeObj, "direction"));
+                int newLength = json_integer_value(json_object_get(snakeObj, "length"));
+                Direction newDir = (Direction)json_integer_value(json_object_get(snakeObj, "direction"));
+
+                _Ctx->players[playerIdx].snake.length = newLength;
+                _Ctx->players[playerIdx].snake.direction = newDir;
 
                 json_t *segments = json_object_get(snakeObj, "segments");
                 if (json_is_array(segments))
@@ -1316,9 +1339,59 @@ int Multiplayer_BrowseGames(MultiplayerContext *_Ctx)
                 continue;  // Skip if no ID
             }
 
-            // Store the game name (with prefix)
+            // Parse map ID from name format: "[67] roomname |m2|"
+            int mapId = 0;  // Default
+            const char *mapMarker = strstr(name, "|m");
+            if (mapMarker)
+            {
+                // Found map marker, extract the number
+                int parsedMapId = atoi(mapMarker + 2);  // Skip "|m"
+                if (parsedMapId >= 0 && parsedMapId < 5)
+                {
+                    mapId = parsedMapId;
+                    printf("✓ Parsed map ID %d from game name\n", mapId);
+                }
+            }
+            else
+            {
+                // Try to get from data field as fallback
+                json_t *mapObj = json_object_get(game, "map");
+                if (mapObj && json_is_integer(mapObj))
+                {
+                    mapId = json_integer_value(mapObj);
+                    printf("✓ Got map ID %d from data field\n", mapId);
+                }
+                else
+                {
+                    printf("⚠ No map info found, defaulting to 0\n");
+                }
+            }
+            _Ctx->browsedGames[_Ctx->browsedGameCount].mapId = mapId;
+
+            // Store the game name WITHOUT the map marker for display
+            char cleanName[128];
+            if (mapMarker)
+            {
+                // Copy up to the map marker
+                size_t len = mapMarker - name;
+                if (len > sizeof(cleanName) - 1)
+                    len = sizeof(cleanName) - 1;
+                strncpy(cleanName, name, len);
+                cleanName[len] = '\0';
+                // Trim trailing space
+                while (len > 0 && cleanName[len-1] == ' ')
+                {
+                    cleanName[--len] = '\0';
+                }
+            }
+            else
+            {
+                strncpy(cleanName, name, sizeof(cleanName) - 1);
+                cleanName[sizeof(cleanName) - 1] = '\0';
+            }
+
             strncpy(_Ctx->browsedGames[_Ctx->browsedGameCount].name,
-                   name,
+                   cleanName,
                    sizeof(_Ctx->browsedGames[_Ctx->browsedGameCount].name) - 1);
 
             // Extract player count
@@ -1333,25 +1406,6 @@ int Multiplayer_BrowseGames(MultiplayerContext *_Ctx)
             }
 
             _Ctx->browsedGames[_Ctx->browsedGameCount].maxPlayers = MAX_MULTIPLAYER_PLAYERS;
-
-            // Extract map ID from data field
-            json_t *dataObj = json_object_get(game, "data");
-            if (dataObj && json_is_object(dataObj))
-            {
-                json_t *mapObj = json_object_get(dataObj, "map");
-                if (mapObj && json_is_integer(mapObj))
-                {
-                    _Ctx->browsedGames[_Ctx->browsedGameCount].mapId = json_integer_value(mapObj);
-                }
-                else
-                {
-                    _Ctx->browsedGames[_Ctx->browsedGameCount].mapId = 0;  // Default to first map
-                }
-            }
-            else
-            {
-                _Ctx->browsedGames[_Ctx->browsedGameCount].mapId = 0;  // Default to first map
-            }
 
             _Ctx->browsedGameCount++;
         }

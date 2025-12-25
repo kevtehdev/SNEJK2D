@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
             }
             else
             {
-                Input_HandleInput(&game, &event, &mpCtx, &scoreboard);
+                Input_HandleInput(&game, &event, &mpCtx, &scoreboard, &audio);
             }
         }
 
@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
         MultiplayerState currentMpState = mpCtx ? mpCtx->state : MP_STATE_DISCONNECTED;
         if (lastState != game.state || lastMpState != currentMpState)
         {
-            Audio_UpdateMusicForState(&audio, game.state, currentMpState);
+            Audio_UpdateMusicForState(&audio, game.state, currentMpState, game.settings.menuMusicEnabled, game.settings.gameMusicEnabled);
             lastState = game.state;
             lastMpState = currentMpState;
         }

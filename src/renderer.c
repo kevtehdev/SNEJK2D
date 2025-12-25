@@ -311,6 +311,37 @@ void Renderer_DrawBackgroundOverlay(Renderer *_Renderer)
     SDL_RenderFillRect(_Renderer->sdlRenderer, &overlay);
 }
 
+/* Draw brightness overlay */
+void Renderer_DrawBrightnessOverlay(Renderer *_Renderer, float _Brightness)
+{
+    if (!_Renderer || !_Renderer->sdlRenderer)
+        return;
+
+    // Skip if brightness is at default
+    if (_Brightness == 1.0f)
+        return;
+
+    SDL_SetRenderDrawBlendMode(_Renderer->sdlRenderer, SDL_BLENDMODE_BLEND);
+
+    if (_Brightness > 1.0f)
+    {
+        // Brighten with white overlay
+        float intensity = (_Brightness - 1.0f) / 1.0f;  // 0.0 to 1.0
+        int alpha = (int)(intensity * 200);  // Max 200 alpha for white
+        SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 255, 255, 255, alpha);
+    }
+    else
+    {
+        // Darken with black overlay
+        float intensity = (1.0f - _Brightness) / 0.5f;  // 0.0 to 1.0
+        int alpha = (int)(intensity * 200);  // Max 200 alpha for black
+        SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 0, 0, 0, alpha);
+    }
+
+    SDL_Rect overlay = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
+    SDL_RenderFillRect(_Renderer->sdlRenderer, &overlay);
+}
+
 /* Helper to draw HUD with combo/pulsing effect */
 static void drawHudWithPulse(Renderer *_Renderer, int _ComboCount, float _Multiplier)
 {
@@ -489,11 +520,15 @@ void Renderer_DrawWalls(Renderer *_Renderer)
 }
 
 /* Draw grid overlay */
-void Renderer_DrawGrid(Renderer *_Renderer)
+void Renderer_DrawGrid(Renderer *_Renderer, int _GridAlpha)
 {
+    // Skip if grid is disabled
+    if (_GridAlpha == 0)
+        return;
+
     SDL_SetRenderDrawBlendMode(_Renderer->sdlRenderer, SDL_BLENDMODE_BLEND);
     SDL_SetRenderDrawColor(_Renderer->sdlRenderer,
-                           COLOR_GRID_R, COLOR_GRID_G, COLOR_GRID_B, COLOR_GRID_A);
+                           COLOR_GRID_R, COLOR_GRID_G, COLOR_GRID_B, _GridAlpha);
 
     /* Vertical lines */
     for (int x = 0; x <= GRID_WIDTH; x++)
@@ -758,12 +793,16 @@ void Renderer_DrawMainMenu(Renderer *_Renderer, int _Selection)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, title_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - title_surface->w/2, 100, title_surface->w, title_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH/2 - title_surface->w/2, 80, title_surface->w, title_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
         SDL_FreeSurface(title_surface);
     }
+
+    // Menu spacing: 50px between items
+    int startY = 180;
+    int spacing = 50;
 
     // Singleplayer option
     const char *sp_text = _Selection == 0 ? "> SINGLEPLAYER " : "  SINGLEPLAYER  ";
@@ -774,7 +813,7 @@ void Renderer_DrawMainMenu(Renderer *_Renderer, int _Selection)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, sp_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - sp_surface->w/2, 250, sp_surface->w, sp_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH/2 - sp_surface->w/2, startY, sp_surface->w, sp_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -790,7 +829,7 @@ void Renderer_DrawMainMenu(Renderer *_Renderer, int _Selection)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, mp_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - mp_surface->w/2, 310, mp_surface->w, mp_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH/2 - mp_surface->w/2, startY + spacing, mp_surface->w, mp_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -806,21 +845,166 @@ void Renderer_DrawMainMenu(Renderer *_Renderer, int _Selection)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, sb_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - sb_surface->w/2, 370, sb_surface->w, sb_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH/2 - sb_surface->w/2, startY + spacing * 2, sb_surface->w, sb_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
         SDL_FreeSurface(sb_surface);
     }
 
+    // Options
+    const char *opt_text = _Selection == 3 ? "> OPTIONS " : "  OPTIONS  ";
+    SDL_Color opt_color = _Selection == 3 ? green : gray;
+    SDL_Surface *opt_surface = TTF_RenderText_Solid(_Renderer->fontMedium, opt_text, opt_color);
+    if (opt_surface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, opt_surface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - opt_surface->w/2, startY + spacing * 3, opt_surface->w, opt_surface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(opt_surface);
+    }
+
+    // Exit
+    const char *exit_text = _Selection == 4 ? "> EXIT " : "  EXIT  ";
+    SDL_Color exit_color = _Selection == 4 ? green : gray;
+    SDL_Surface *exit_surface = TTF_RenderText_Solid(_Renderer->fontMedium, exit_text, exit_color);
+    if (exit_surface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, exit_surface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - exit_surface->w/2, startY + spacing * 4, exit_surface->w, exit_surface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(exit_surface);
+    }
+}
+
+void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
+{
+    SDL_Color white = {255, 255, 255, 255};
+    SDL_Color green = {0, 255, 0, 255};
+    SDL_Color gray = {150, 150, 150, 255};
+
+    // Title
+    SDL_Surface *title_surface = TTF_RenderText_Solid(_Renderer->fontLarge, "OPTIONS", white);
+    if (title_surface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, title_surface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - title_surface->w/2, 50, title_surface->w, title_surface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(title_surface);
+    }
+
+    // Menu Music
+    SDL_Color menuMusic_color = _Game->optionsSelection == 0 ? green : gray;
+    char menuMusic_text[64];
+    snprintf(menuMusic_text, sizeof(menuMusic_text), "%s Menu Music: [%s]",
+             _Game->optionsSelection == 0 ? ">" : " ", _Game->settings.menuMusicEnabled ? "ON" : "OFF");
+    SDL_Surface *menuMusic_surface = TTF_RenderText_Solid(_Renderer->fontMedium, menuMusic_text, menuMusic_color);
+    if (menuMusic_surface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, menuMusic_surface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - menuMusic_surface->w/2, 180, menuMusic_surface->w, menuMusic_surface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(menuMusic_surface);
+    }
+
+    // Game Music
+    SDL_Color gameMusic_color = _Game->optionsSelection == 1 ? green : gray;
+    char gameMusic_text[64];
+    snprintf(gameMusic_text, sizeof(gameMusic_text), "%s Game Music: [%s]",
+             _Game->optionsSelection == 1 ? ">" : " ", _Game->settings.gameMusicEnabled ? "ON" : "OFF");
+    SDL_Surface *gameMusic_surface = TTF_RenderText_Solid(_Renderer->fontMedium, gameMusic_text, gameMusic_color);
+    if (gameMusic_surface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, gameMusic_surface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - gameMusic_surface->w/2, 230, gameMusic_surface->w, gameMusic_surface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(gameMusic_surface);
+    }
+
+    // Grid Alpha
+    SDL_Color grid_color = _Game->optionsSelection == 2 ? green : gray;
+    char grid_text[64];
+    const char *grid_label = _Game->settings.gridAlpha == 0 ? "OFF" : "";
+    if (_Game->settings.gridAlpha == 0)
+        snprintf(grid_text, sizeof(grid_text), "%s Grid: [%s]", _Game->optionsSelection == 2 ? ">" : " ", grid_label);
+    else
+        snprintf(grid_text, sizeof(grid_text), "%s Grid: [%d]", _Game->optionsSelection == 2 ? ">" : " ", _Game->settings.gridAlpha);
+    SDL_Surface *grid_surface = TTF_RenderText_Solid(_Renderer->fontMedium, grid_text, grid_color);
+    if (grid_surface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, grid_surface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - grid_surface->w/2, 280, grid_surface->w, grid_surface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(grid_surface);
+    }
+
+    // Brightness
+    SDL_Color bright_color = _Game->optionsSelection == 3 ? green : gray;
+    char bright_text[64];
+    snprintf(bright_text, sizeof(bright_text), "%s Brightness: [%.0f%%]",
+             _Game->optionsSelection == 3 ? ">" : " ", _Game->settings.brightness * 100);
+    SDL_Surface *bright_surface = TTF_RenderText_Solid(_Renderer->fontMedium, bright_text, bright_color);
+    if (bright_surface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, bright_surface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - bright_surface->w/2, 330, bright_surface->w, bright_surface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(bright_surface);
+    }
+
+    // Reset to defaults
+    const char *reset_text = _Game->optionsSelection == 4 ? "> RESET TO DEFAULTS " : "  RESET TO DEFAULTS  ";
+    SDL_Color reset_color = _Game->optionsSelection == 4 ? green : gray;
+    SDL_Surface *reset_surface = TTF_RenderText_Solid(_Renderer->fontMedium, reset_text, reset_color);
+    if (reset_surface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, reset_surface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - reset_surface->w/2, 390, reset_surface->w, reset_surface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(reset_surface);
+    }
+
     // Instructions
-    SDL_Surface *inst_surface = TTF_RenderText_Solid(_Renderer->fontSmall, "UP/DOWN to select   ENTER to confirm", white);
+    SDL_Surface *inst_surface = TTF_RenderText_Solid(_Renderer->fontSmall,
+        "UP DOWN SELECT   LEFT RIGHT ADJUST   ENTER RESET   ESC BACK", white);
     if (inst_surface)
     {
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, inst_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - inst_surface->w/2, 450, inst_surface->w, inst_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH/2 - inst_surface->w/2, 430, inst_surface->w, inst_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -897,17 +1081,28 @@ void Renderer_DrawMultiplayerMenu(Renderer *_Renderer, MultiplayerContext *_MpCt
     }
 }
 
-void Renderer_DrawMultiplayerRoomName(Renderer *_Renderer, MultiplayerContext *_MpCtx)
+void Renderer_DrawMultiplayerRoomName(Renderer *_Renderer, MultiplayerContext *_MpCtx, unsigned int _CurrentTime)
 {
     if (!_Renderer || !_MpCtx)
         return;
 
+    /* Blinking colors - cycle through RGB */
+    int blinkPhase = (_CurrentTime / 300) % 6;  /* Change color every 300ms */
+    SDL_Color promptColors[] = {
+        {255, 100, 100, 255},  /* Red */
+        {255, 200, 100, 255},  /* Orange */
+        {255, 255, 100, 255},  /* Yellow */
+        {100, 255, 100, 255},  /* Green */
+        {100, 200, 255, 255},  /* Cyan */
+        {200, 100, 255, 255}   /* Purple */
+    };
+
     SDL_Color white = {255, 255, 255, 255};
     SDL_Color green = {100, 200, 100, 255};
-    int y = 150;
+    int y = 100;
 
     // Title
-    SDL_Surface *title_surface = TTF_RenderText_Solid(_Renderer->fontLarge, "HOST GAME", white);
+    SDL_Surface *title_surface = TTF_RenderText_Solid(_Renderer->fontLarge, "SNEJK2D", white);
     if (title_surface)
     {
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, title_surface);
@@ -921,6 +1116,22 @@ void Renderer_DrawMultiplayerRoomName(Renderer *_Renderer, MultiplayerContext *_
     }
 
     y += 70;
+
+    // Blinking "TYPE GAME NAME" prompt
+    SDL_Surface *promptSurface = TTF_RenderText_Solid(_Renderer->fontMedium, "TYPE GAME NAME", promptColors[blinkPhase]);
+    if (promptSurface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, promptSurface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - promptSurface->w/2, y, promptSurface->w, promptSurface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(promptSurface);
+    }
+
+    y += 60;
 
     // Input box with current text
     char display_text[64];
@@ -1370,8 +1581,8 @@ void Renderer_DrawMultiplayerGame(Renderer *_Renderer, MultiplayerContext *_MpCt
     // Draw walls
     Renderer_DrawWalls(_Renderer);
 
-    // Draw grid
-    Renderer_DrawGrid(_Renderer);
+    // Draw grid (use default alpha for multiplayer)
+    Renderer_DrawGrid(_Renderer, COLOR_GRID_A);
 
     // Draw snakes with different colors
     SDL_Color player_colors[MAX_MULTIPLAYER_PLAYERS] = {
@@ -1637,7 +1848,7 @@ void Renderer_DrawScoreboard(Renderer *_Renderer, Scoreboard *_Scoreboard, unsig
 
     // Instructions at bottom
     SDL_Color gray = {150, 150, 150, 255};
-    SDL_Surface *inst_surf = TTF_RenderText_Solid(_Renderer->fontSmall, "Press ESC to return", gray);
+    SDL_Surface *inst_surf = TTF_RenderText_Solid(_Renderer->fontSmall, "ESC BACK", gray);
     if (inst_surf)
     {
         SDL_Texture *inst_tex = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, inst_surf);
@@ -1694,10 +1905,14 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
     {
         Renderer_DrawScoreboard(_Renderer, _Scoreboard, _CurrentTime);
     }
+    else if (_Game->state == GAME_OPTIONS)
+    {
+        Renderer_DrawOptions(_Renderer, _Game);
+    }
     else if (_Game->state == GAME_PLAYING || _Game->state == GAME_OVER)
     {
         // Singleplayer _Game
-        Renderer_DrawGrid(_Renderer);
+        Renderer_DrawGrid(_Renderer, _Game->settings.gridAlpha);
         Renderer_DrawSnake(_Renderer, &_Game->snake);
         Renderer_DrawFood(_Renderer, &_Game->food);
 
@@ -1792,7 +2007,7 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
         }
         else if (_MpCtx->state == MP_STATE_ENTERING_NAME)
         {
-            Renderer_DrawMultiplayerRoomName(_Renderer, _MpCtx);
+            Renderer_DrawMultiplayerRoomName(_Renderer, _MpCtx, _CurrentTime);
         }
         else if (_MpCtx->state == MP_STATE_BROWSING)
         {
@@ -1825,32 +2040,92 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
                 SDL_FreeSurface(surface);
             }
         }
-        else if (_MpCtx->state == MP_STATE_LOBBY || _MpCtx->state == MP_STATE_COUNTDOWN ||
-                 _MpCtx->state == MP_STATE_CHATTING || _MpCtx->state == MP_STATE_CHANGING_NICK)
+        else if (_MpCtx->state == MP_STATE_LOBBY ||
+                 (_MpCtx->state == MP_STATE_CHATTING && _MpCtx->previousState == MP_STATE_LOBBY) ||
+                 (_MpCtx->state == MP_STATE_CHANGING_NICK && _MpCtx->previousState == MP_STATE_LOBBY))
         {
             Renderer_DrawMultiplayerLobby(_Renderer, _MpCtx);
 
-            // Show countdown
+            // Overlay chat or nick change screens
+            if (_MpCtx->state == MP_STATE_CHATTING && _MpCtx->previousState == MP_STATE_LOBBY)
+            {
+                Renderer_DrawChatOverlay(_Renderer, _MpCtx);
+            }
+            else if (_MpCtx->state == MP_STATE_CHANGING_NICK && _MpCtx->previousState == MP_STATE_LOBBY)
+            {
+                Renderer_DrawNickOverlay(_Renderer, _MpCtx);
+            }
+        }
+        else if (_MpCtx->state == MP_STATE_PLAYING || _MpCtx->state == MP_STATE_GAME_OVER ||
+                 _MpCtx->state == MP_STATE_COUNTDOWN)
+        {
+            Renderer_DrawMultiplayerGame(_Renderer, _MpCtx);
+
+            // Show countdown with READY, STEADY, GO!!! (DISCO MODE) over game field
             if (_MpCtx->state == MP_STATE_COUNTDOWN)
             {
                 int seconds_left = (_MpCtx->gameStartTime - _CurrentTime) / 1000 + 1;
-                if (seconds_left > 0 && seconds_left <= 3)
-                {
-                    char countdown_text[16];
-                    snprintf(countdown_text, sizeof(countdown_text), "%d", seconds_left);
 
-                    SDL_Color white = {255, 255, 255, 255};
-                    SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontLarge, countdown_text, white);
+                // Disco overlay - rotating colors every 100ms
+                int colorPhase = (_CurrentTime / 100) % 6;
+                SDL_Color overlayColors[] = {
+                    {255, 0, 0, 80},     // Red
+                    {255, 128, 0, 80},   // Orange
+                    {255, 255, 0, 80},   // Yellow
+                    {0, 255, 0, 80},     // Green
+                    {0, 128, 255, 80},   // Blue
+                    {128, 0, 255, 80}    // Purple
+                };
+
+                SDL_SetRenderDrawBlendMode(_Renderer->sdlRenderer, SDL_BLENDMODE_BLEND);
+                SDL_SetRenderDrawColor(_Renderer->sdlRenderer,
+                                        overlayColors[colorPhase].r,
+                                        overlayColors[colorPhase].g,
+                                        overlayColors[colorPhase].b,
+                                        overlayColors[colorPhase].a);
+                SDL_Rect overlayRect = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
+                SDL_RenderFillRect(_Renderer->sdlRenderer, &overlayRect);
+
+                const char *countdown_text = NULL;
+                if (seconds_left == 3)
+                    countdown_text = "READY";
+                else if (seconds_left == 2)
+                    countdown_text = "STEADY";
+                else if (seconds_left == 1)
+                    countdown_text = "GO!!!";
+
+                if (countdown_text)
+                {
+                    // Rotating text colors (8 colors, every 80ms)
+                    int textColorPhase = (_CurrentTime / 80) % 8;
+                    SDL_Color textColors[] = {
+                        {255, 0, 0, 255},     // Red
+                        {255, 128, 0, 255},   // Orange
+                        {255, 255, 0, 255},   // Yellow
+                        {0, 255, 0, 255},     // Green
+                        {0, 255, 255, 255},   // Cyan
+                        {0, 128, 255, 255},   // Blue
+                        {128, 0, 255, 255},   // Purple
+                        {255, 0, 255, 255}    // Magenta
+                    };
+
+                    // Pulse effect - scale text up and down (±20%)
+                    float pulse = 1.0f + 0.2f * sinf((_CurrentTime % 1000) * 0.006283f);
+
+                    SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontLarge, countdown_text, textColors[textColorPhase]);
                     if (surface)
                     {
                         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, surface);
                         if (texture)
                         {
+                            int pulsed_w = (int)(surface->w * pulse);
+                            int pulsed_h = (int)(surface->h * pulse);
+
                             SDL_Rect dest = {
-                                WINDOW_WIDTH/2 - surface->w/2,
-                                WINDOW_HEIGHT/2 - surface->h/2,
-                                surface->w,
-                                surface->h
+                                WINDOW_WIDTH/2 - pulsed_w/2,
+                                WINDOW_HEIGHT/2 - pulsed_h/2,
+                                pulsed_w,
+                                pulsed_h
                             };
                             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
                             SDL_DestroyTexture(texture);
@@ -1859,20 +2134,6 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
                     }
                 }
             }
-
-            // Overlay chat or nick change screens
-            if (_MpCtx->state == MP_STATE_CHATTING)
-            {
-                Renderer_DrawChatOverlay(_Renderer, _MpCtx);
-            }
-            else if (_MpCtx->state == MP_STATE_CHANGING_NICK)
-            {
-                Renderer_DrawNickOverlay(_Renderer, _MpCtx);
-            }
-        }
-        else if (_MpCtx->state == MP_STATE_PLAYING || _MpCtx->state == MP_STATE_GAME_OVER)
-        {
-            Renderer_DrawMultiplayerGame(_Renderer, _MpCtx);
 
             // Game over overlay
             if (_MpCtx->state == MP_STATE_GAME_OVER)
@@ -1928,7 +2189,7 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
                 // Menu options (only show if host)
                 if (_MpCtx->isHost)
                 {
-                    const char *options[] = {"TRY AGAIN", "MAIN MENU"};
+                    const char *options[] = {"TRY AGAIN", "QUIT GAME"};
                     SDL_Color selected_color = {0, 255, 0, 255};
                     SDL_Color normal_color = {200, 200, 200, 255};
 
@@ -1982,6 +2243,9 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
             Renderer_DrawMultiplayerHudBorder(_Renderer, _MpCtx);
         }
     }
+
+    // Apply brightness overlay (affects entire screen)
+    Renderer_DrawBrightnessOverlay(_Renderer, _Game->settings.brightness);
 
     // Present the frame
     Renderer_Present(_Renderer);

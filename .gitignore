@@ -28,3 +28,4 @@ tests/test_*
 # Old/unused asset folders
 assets/
 !assets_clean/
+settings.conf

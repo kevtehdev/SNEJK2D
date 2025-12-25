@@ -63,6 +63,9 @@ void Renderer_DrawBackground(Renderer *_Renderer, unsigned int _Tick);
 /* Draw background overlay */
 void Renderer_DrawBackgroundOverlay(Renderer *_Renderer);
 
+/* Draw brightness overlay */
+void Renderer_DrawBrightnessOverlay(Renderer *_Renderer, float _Brightness);
+
 /* Draw HUD border with score */
 void Renderer_DrawHudBorderWithScore(Renderer *_Renderer, int _Score);
 
@@ -73,7 +76,7 @@ void Renderer_DrawHudBorderWithCombo(Renderer *_Renderer, int _Score, int _Combo
 void Renderer_DrawWalls(Renderer *_Renderer);
 
 /* Draw grid overlay */
-void Renderer_DrawGrid(Renderer *_Renderer);
+void Renderer_DrawGrid(Renderer *_Renderer, int _GridAlpha);
 
 /* Draw snake */
 void Renderer_DrawSnake(Renderer *_Renderer, Snake *_Snake);
@@ -96,6 +99,9 @@ void Renderer_DrawNameInput(Renderer *_Renderer, Game *_Game, unsigned int _Tick
 /* Draw main menu */
 void Renderer_DrawMainMenu(Renderer *_Renderer, int _Selection);
 
+/* Draw options menu */
+void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game);
+
 /* Draw explosion at position */
 void Renderer_DrawExplosion(Renderer *_Renderer, Position _Pos, int _Frame);
 
@@ -106,7 +112,7 @@ void Renderer_DrawScoreboard(Renderer *_Renderer, Scoreboard *_Scoreboard, unsig
 void Renderer_DrawMultiplayerMenu(Renderer *_Renderer, MultiplayerContext *_MpCtx);
 
 /* Draw multiplayer room name */
-void Renderer_DrawMultiplayerRoomName(Renderer *_Renderer, MultiplayerContext *_MpCtx);
+void Renderer_DrawMultiplayerRoomName(Renderer *_Renderer, MultiplayerContext *_MpCtx, unsigned int _CurrentTime);
 
 /* Draw multiplayer input */
 void Renderer_DrawMultiplayerInput(Renderer *_Renderer, MultiplayerContext *_MpCtx);
