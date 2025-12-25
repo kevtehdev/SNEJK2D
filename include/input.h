@@ -18,7 +18,8 @@ void Input_HandleGameMenuInput(Game *_Game, SDL_Event *_Event);
 void Input_HandlePlayingInput(Game *_Game, SDL_Event *_Event);
 void Input_HandleGameOverInput(Game *_Game, SDL_Event *_Event);
 void Input_HandleScoreboardInput(Game *_Game, SDL_Event *_Event);
-void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event);
-void Input_HandleInput(Game *_Game, SDL_Event *_Event, MultiplayerContext **_MpCtx, Scoreboard *_Scoreboard);
+void Input_HandleOptionsInput(Game *_Game, SDL_Event *_Event, void *_Audio);
+void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event, Game *_Game);
+void Input_HandleInput(Game *_Game, SDL_Event *_Event, MultiplayerContext **_MpCtx, Scoreboard *_Scoreboard, void *_Audio);
 
 #endif

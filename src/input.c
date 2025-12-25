@@ -1,5 +1,7 @@
 #include "../include/input.h"
+#include "../include/audio.h"
 #include "../include/multiplayer.h"
+#include <SDL2/SDL_mixer.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -16,11 +18,11 @@ void Input_HandleMainMenuInput(Game *_Game, SDL_Event *_Event, MultiplayerContex
         {
         case SDLK_UP:
         case SDLK_w:
-            g_main_menu_selection = (g_main_menu_selection - 1 + 3) % 3;
+            g_main_menu_selection = (g_main_menu_selection - 1 + 5) % 5;
             break;
         case SDLK_DOWN:
         case SDLK_s:
-            g_main_menu_selection = (g_main_menu_selection + 1) % 3;
+            g_main_menu_selection = (g_main_menu_selection + 1) % 5;
             break;
         case SDLK_RETURN:
         case SDLK_SPACE:
@@ -40,6 +42,15 @@ void Input_HandleMainMenuInput(Game *_Game, SDL_Event *_Event, MultiplayerContex
             else if (g_main_menu_selection == 2)
             {
                 _Game->state = GAME_SCOREBOARD;
+            }
+            else if (g_main_menu_selection == 3)
+            {
+                _Game->state = GAME_OPTIONS;
+            }
+            else if (g_main_menu_selection == 4)
+            {
+                // EXIT
+                _Game->running = false;
             }
             break;
         case SDLK_ESCAPE:
@@ -191,7 +202,117 @@ void Input_HandleScoreboardInput(Game *_Game, SDL_Event *_Event)
     }
 }
 
-void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event)
+void Input_HandleOptionsInput(Game *_Game, SDL_Event *_Event, void *_Audio)
+{
+    if (_Event->type == SDL_KEYDOWN)
+    {
+        switch (_Event->key.keysym.sym)
+        {
+        case SDLK_UP:
+        case SDLK_w:
+            _Game->optionsSelection = (_Game->optionsSelection - 1 + 5) % 5;
+            break;
+        case SDLK_DOWN:
+        case SDLK_s:
+            _Game->optionsSelection = (_Game->optionsSelection + 1) % 5;
+            break;
+        case SDLK_LEFT:
+        case SDLK_a:
+        case SDLK_RIGHT:
+        case SDLK_d:
+            // Toggle or adjust value
+            if (_Game->optionsSelection == 0)  // Menu Music
+            {
+                _Game->settings.menuMusicEnabled = !_Game->settings.menuMusicEnabled;
+
+                // Apply immediately
+                if (_Audio)
+                {
+                    AudioSystem *audio = (AudioSystem *)_Audio;
+                    if (_Game->settings.menuMusicEnabled)
+                    {
+                        if (!Mix_PlayingMusic() && audio->menuMusic)
+                        {
+                            Mix_PlayMusic((Mix_Music *)audio->menuMusic, -1);
+                        }
+                    }
+                    else
+                    {
+                        Mix_HaltMusic();
+                    }
+                }
+            }
+            else if (_Game->optionsSelection == 1)  // Game Music
+            {
+                _Game->settings.gameMusicEnabled = !_Game->settings.gameMusicEnabled;
+            }
+            else if (_Game->optionsSelection == 2)  // Grid Alpha
+            {
+                if (_Event->key.keysym.sym == SDLK_LEFT || _Event->key.keysym.sym == SDLK_a)
+                {
+                    _Game->settings.gridAlpha--;
+                    if (_Game->settings.gridAlpha < 0)
+                        _Game->settings.gridAlpha = 0;
+                }
+                else
+                {
+                    _Game->settings.gridAlpha++;
+                    if (_Game->settings.gridAlpha > 10)
+                        _Game->settings.gridAlpha = 10;
+                }
+            }
+            else if (_Game->optionsSelection == 3)  // Brightness
+            {
+                if (_Event->key.keysym.sym == SDLK_LEFT || _Event->key.keysym.sym == SDLK_a)
+                {
+                    _Game->settings.brightness -= 0.1f;
+                    if (_Game->settings.brightness < 0.5f)
+                        _Game->settings.brightness = 0.5f;
+                }
+                else
+                {
+                    _Game->settings.brightness += 0.1f;
+                    if (_Game->settings.brightness > 2.0f)
+                        _Game->settings.brightness = 2.0f;
+                }
+            }
+            break;
+        case SDLK_RETURN:
+        case SDLK_SPACE:
+            if (_Game->optionsSelection == 4)  // Reset to defaults
+            {
+                Settings_Init(&_Game->settings);
+                Settings_Save(&_Game->settings);
+
+                // Apply menu music setting immediately
+                if (_Audio)
+                {
+                    AudioSystem *audio = (AudioSystem *)_Audio;
+                    if (_Game->settings.menuMusicEnabled)
+                    {
+                        if (!Mix_PlayingMusic() && audio->menuMusic)
+                        {
+                            Mix_PlayMusic((Mix_Music *)audio->menuMusic, -1);
+                        }
+                    }
+                    else
+                    {
+                        Mix_HaltMusic();
+                    }
+                }
+            }
+            break;
+        case SDLK_ESCAPE:
+            Settings_Save(&_Game->settings);
+            _Game->state = GAME_MAIN_MENU;
+            break;
+        }
+    }
+
+    (void)_Audio;  // Reserved for audio volume updates
+}
+
+void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event, Game *_Game)
 {
     if (!_MpCtx)
         return;
@@ -259,22 +380,27 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event)
             {
                 _MpCtx->state = MP_STATE_MENU;
             }
-            else if (_Event->key.keysym.sym == SDLK_RETURN && _MpCtx->roomNameLen > 0)
-            {
-                Multiplayer_Host(_MpCtx, "Player 1");
-            }
-            else if (_Event->key.keysym.sym == SDLK_LEFT || _Event->key.keysym.sym == SDLK_a)
-            {
-                _MpCtx->selectedBackground = (_MpCtx->selectedBackground - 1 + NUM_BACKGROUNDS) % NUM_BACKGROUNDS;
-            }
-            else if (_Event->key.keysym.sym == SDLK_RIGHT || _Event->key.keysym.sym == SDLK_d)
-            {
-                _MpCtx->selectedBackground = (_MpCtx->selectedBackground + 1) % NUM_BACKGROUNDS;
-            }
             else if (_Event->key.keysym.sym == SDLK_BACKSPACE && _MpCtx->roomNameLen > 0)
             {
                 _MpCtx->roomNameLen--;
                 _MpCtx->roomName[_MpCtx->roomNameLen] = '\0';
+            }
+            else if (_Event->key.keysym.sym == SDLK_RETURN && _MpCtx->roomNameLen > 0)
+            {
+                // Name is confirmed, now allow map selection with LEFT/RIGHT/A/D
+                // Second ENTER will create the game
+                // Use player name from Game struct, or default to "Player 1"
+                const char *playerName = (_Game && _Game->playerNameLen > 0) ? _Game->playerName : "Player 1";
+                Multiplayer_Host(_MpCtx, playerName);
+            }
+            // Only allow LEFT/RIGHT for map selection (not A/D to avoid text input conflict)
+            else if (_Event->key.keysym.sym == SDLK_LEFT)
+            {
+                _MpCtx->selectedBackground = (_MpCtx->selectedBackground - 1 + NUM_BACKGROUNDS) % NUM_BACKGROUNDS;
+            }
+            else if (_Event->key.keysym.sym == SDLK_RIGHT)
+            {
+                _MpCtx->selectedBackground = (_MpCtx->selectedBackground + 1) % NUM_BACKGROUNDS;
             }
             else if (_MpCtx->roomNameLen < 32)
             {
@@ -305,7 +431,11 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event)
             case SDLK_SPACE:
                 if (_MpCtx->browsedGameCount > 0)
                 {
-                    Multiplayer_Join(_MpCtx, _MpCtx->browsedGames[_MpCtx->selectedGameIndex].sessionId, "Player 2");
+                    // Set the background to match the game we're joining
+                    _MpCtx->selectedBackground = _MpCtx->browsedGames[_MpCtx->selectedGameIndex].mapId;
+                    // Use player name from Game struct, or default to "Player 2"
+                    const char *playerName = (_Game && _Game->playerNameLen > 0) ? _Game->playerName : "Player 2";
+                    Multiplayer_Join(_MpCtx, _MpCtx->browsedGames[_MpCtx->selectedGameIndex].sessionId, playerName);
                 }
                 break;
             case SDLK_ESCAPE:
@@ -348,6 +478,16 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event)
                 }
                 break;
             case SDLK_ESCAPE:
+                // Broadcast disconnect to clients if host
+                if (_MpCtx->isHost && _MpCtx->api)
+                {
+                    json_t *message = json_object();
+                    json_object_set_new(message, "type", json_string("host_disconnect"));
+                    mpapi_game(_MpCtx->api, message, NULL);
+                    json_decref(message);
+                }
+                // Mark for disconnection
+                _MpCtx->state = MP_STATE_DISCONNECTED;
                 break;
             }
         }
@@ -471,12 +611,28 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event)
                         Multiplayer_RestartGame(_MpCtx);
                     }
                 }
-                else
+                else  // QUIT GAME selected
                 {
+                    // Broadcast disconnect to clients if host
+                    if (_MpCtx->isHost && _MpCtx->api)
+                    {
+                        json_t *message = json_object();
+                        json_object_set_new(message, "type", json_string("host_disconnect"));
+                        mpapi_game(_MpCtx->api, message, NULL);
+                        json_decref(message);
+                    }
                     _MpCtx->state = MP_STATE_DISCONNECTED;
                 }
                 break;
             case SDLK_ESCAPE:
+                // Broadcast disconnect to clients if host
+                if (_MpCtx->isHost && _MpCtx->api)
+                {
+                    json_t *message = json_object();
+                    json_object_set_new(message, "type", json_string("host_disconnect"));
+                    mpapi_game(_MpCtx->api, message, NULL);
+                    json_decref(message);
+                }
                 _MpCtx->state = MP_STATE_DISCONNECTED;
                 break;
             }
@@ -508,6 +664,18 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event)
                 dir = DIR_RIGHT;
                 hasInput = true;
                 break;
+            case SDLK_ESCAPE:
+                // Broadcast disconnect to other player
+                if (_MpCtx->api)
+                {
+                    json_t *message = json_object();
+                    json_object_set_new(message, "type", json_string("host_disconnect"));
+                    mpapi_game(_MpCtx->api, message, NULL);
+                    json_decref(message);
+                }
+                // Mark for disconnection - this will return both players to main menu
+                _MpCtx->state = MP_STATE_DISCONNECTED;
+                break;
             }
 
             if (hasInput)
@@ -529,7 +697,7 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event)
     }
 }
 
-void Input_HandleInput(Game *_Game, SDL_Event *_Event, MultiplayerContext **_MpCtx, Scoreboard *_Scoreboard)
+void Input_HandleInput(Game *_Game, SDL_Event *_Event, MultiplayerContext **_MpCtx, Scoreboard *_Scoreboard, void *_Audio)
 {
     MultiplayerContext *mpCtx = _MpCtx ? *_MpCtx : NULL;
 
@@ -557,6 +725,10 @@ void Input_HandleInput(Game *_Game, SDL_Event *_Event, MultiplayerContext **_MpC
     {
         Input_HandleScoreboardInput(_Game, _Event);
     }
+    else if (_Game->state == GAME_OPTIONS)
+    {
+        Input_HandleOptionsInput(_Game, _Event, _Audio);
+    }
     else if (_Game->state == GAME_MULTIPLAYER && mpCtx)
     {
         // Handle ESC to return to main menu from multiplayer menu
@@ -581,7 +753,15 @@ void Input_HandleInput(Game *_Game, SDL_Event *_Event, MultiplayerContext **_MpC
         }
         else
         {
-            Input_HandleMultiplayerInput(mpCtx, _Event);
+            Input_HandleMultiplayerInput(mpCtx, _Event, _Game);
+
+            // Check if player wants to disconnect and clean up
+            if (mpCtx && mpCtx->state == MP_STATE_DISCONNECTED)
+            {
+                Multiplayer_Destroy(*_MpCtx);
+                *_MpCtx = NULL;
+                _Game->state = GAME_MAIN_MENU;
+            }
         }
     }
 

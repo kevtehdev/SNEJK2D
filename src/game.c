@@ -33,6 +33,11 @@ void Game_Init(Game *_Game)
     _Game->playerNameLen = strlen(_Game->playerName);
     _Game->isHighscore = false;
 
+    // Initialize options
+    _Game->optionsSelection = 0;
+    Settings_Init(&_Game->settings);
+    Settings_Load(&_Game->settings);
+
     Snake_Init(&_Game->snake);
     Game_SpawnFood(_Game);
 }
