@@ -1,18 +1,12 @@
 # Build artifacts
 build/
+build-win/
 *.o
 *.a
-snake
+*.exe
 snejk2d
 .md/
-
-# Game data (user-specific)
-achievements.json
-config.ini
-
-# Test executables
-tests/test_*
-!tests/test_*.c
+.scoreboard.json
 
 # IDE
 .vscode/
@@ -27,4 +21,15 @@ tests/test_*
 # Old/unused asset folders
 assets/
 !assets_clean/
+
+# Build scripts (optional, keep if needed)
+build_windows.sh
+
+# Runtime files
 settings.conf
+
+# Release artifacts (use GitHub Releases instead)
+release/
+
+# Scoreboard data
+scoreboard.json
