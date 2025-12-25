@@ -1,0 +1,30 @@
+# Build artifacts
+build/
+*.o
+*.a
+snake
+snejk2d
+.md/
+
+# Game data (user-specific)
+scoreboard.json
+achievements.json
+config.ini
+
+# Test executables
+tests/test_*
+!tests/test_*.c
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
+
+# System
+*.swp
+*.swo
+*~
+
+# Old/unused asset folders
+assets/
+!assets_clean/

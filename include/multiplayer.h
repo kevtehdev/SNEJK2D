@@ -1,0 +1,142 @@
+#ifndef __MULTIPLAYER_H_
+#define __MULTIPLAYER_H_
+
+#include "config.h"
+#include "snake.h"
+#include "game.h"
+#include "../src/mpapi/c_client/libs/mpapi.h"
+#include "../src/mpapi/c_client/libs/jansson/jansson.h"
+#include <stdbool.h>
+
+#define MAX_MULTIPLAYER_PLAYERS 2  // 1v1 only
+#define MAX_BROWSEABLE_GAMES 10
+
+// Menu options
+typedef enum {
+    MP_MENU_HOST = 0,
+    MP_MENU_JOIN = 1
+} MultiplayerMenuOption;
+
+// Multiplayer states
+typedef enum {
+    MP_STATE_MENU,           // Choosing host/join
+    MP_STATE_ENTERING_NAME,  // Entering room name for hosting
+    MP_STATE_BROWSING,       // Browsing public games (join)
+    MP_STATE_HOSTING,        // Creating session
+    MP_STATE_JOINING,        // Joining session
+    MP_STATE_LOBBY,          // Waiting for opponent
+    MP_STATE_CHATTING,       // Chat mode in lobby (C key)
+    MP_STATE_CHANGING_NICK,  // Changing nickname in lobby (N key)
+    MP_STATE_COUNTDOWN,      // 3-2-1 countdown
+    MP_STATE_PLAYING,        // Active game
+    MP_STATE_GAME_OVER,      // Game ended
+    MP_STATE_DISCONNECTED    // Connection lost
+} MultiplayerState;
+
+// Browseable game info
+typedef struct {
+    char sessionId[8];
+    char name[64];
+    int playerCount;
+    int maxPlayers;
+    int mapId;  // Background/map index
+} BrowseableGame;
+
+// Player in multiplayer
+typedef struct {
+    Snake snake;
+    bool joined;
+    bool alive;
+    bool ready;
+    int score;
+    char clientId[64];
+    char name[32];
+    bool isLocal;
+
+    // Combo system
+    int comboCount;
+    unsigned int lastFoodTime;
+    float comboMultiplier;
+} MultiplayerPlayer;
+
+// Multiplayer game context
+typedef struct {
+    // mpapi
+    mpapi *api;
+    int listenerId;
+
+    // Game state
+    MultiplayerState state;
+    MultiplayerPlayer players[MAX_MULTIPLAYER_PLAYERS];
+    Position food[2];  // Two food items for more intense gameplay
+
+    // Session info
+    bool isHost;
+    int localPlayerIndex;
+    char sessionId[8];
+    char ourClientId[64];
+
+    // Network
+    Direction pendingInput;
+    bool hasPendingInput;
+
+    // Timing
+    unsigned int lastMoveTime;
+    unsigned int currentSpeed;
+    unsigned int gameStartTime;
+    unsigned int countdownStart;
+
+    // UI
+    int selectedBackground;
+    char errorMessage[256];
+    int menuSelection;
+    char sessionInput[8];
+    int sessionInputLen;
+    char roomName[64];
+    int roomNameLen;
+    int gameOverSelection;  // 0 = Try Again, 1 = Main Menu
+
+    // Browsing
+    BrowseableGame browsedGames[MAX_BROWSEABLE_GAMES];
+    int browsedGameCount;
+    int selectedGameIndex;
+
+    // Chat system
+    char chatMessages[10][128];  // Last 10 chat messages & max length of 128 chars each.
+    int chatCount;
+    char chatInput[128];
+    int chatInputLen;
+    MultiplayerState previousState;  // State to return to after chat/nick change
+
+    // Nick change
+    char nickInput[32];
+    int nickInputLen;
+} MultiplayerContext;
+
+// Lifecycle
+MultiplayerContext* Multiplayer_Create(void);
+void Multiplayer_Destroy(MultiplayerContext *_Ctx);
+
+// Host operations
+int Multiplayer_Host(MultiplayerContext *_Ctx, const char *_PlayerName);
+void Multiplayer_HostUpdate(MultiplayerContext *_Ctx, unsigned int _CurrentTime);
+void Multiplayer_HostBroadcastState(MultiplayerContext *_Ctx);
+
+// Client operations
+int Multiplayer_Join(MultiplayerContext *_Ctx, const char *_SessionId, const char *_PlayerName);
+void Multiplayer_ClientSendInput(MultiplayerContext *_Ctx, Direction _Dir);
+int Multiplayer_BrowseGames(MultiplayerContext *_Ctx);
+
+// Common operations
+void Multiplayer_StartGame(MultiplayerContext *_Ctx);
+void Multiplayer_RestartGame(MultiplayerContext *_Ctx);
+void Multiplayer_ToggleReady(MultiplayerContext *_Ctx);
+bool Multiplayer_AllReady(MultiplayerContext *_Ctx);
+int Multiplayer_GetLocalPlayerIndex(MultiplayerContext *_Ctx);
+void Multiplayer_UpdateCountdown(MultiplayerContext *_Ctx, unsigned int _CurrentTime);
+
+// Serialization
+json_t* Multiplayer_SerializeState(MultiplayerContext *_Ctx);
+void Multiplayer_DeserializeState(MultiplayerContext *_Ctx, json_t *_Data);
+
+#endif

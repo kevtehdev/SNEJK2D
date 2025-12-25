@@ -1,0 +1,111 @@
+# Windows cross-compile Makefile for SNEJK2D
+# Requires mingw-w64 and Windows SDL2 libraries
+
+CC=x86_64-w64-mingw32-gcc
+WINDRES=x86_64-w64-mingw32-windres
+
+# Directories
+SRC_DIR=src
+INCLUDE_DIR=include
+BUILD_DIR=build-win
+MPAPI_DIR=$(SRC_DIR)/mpapi/c_client/libs
+
+# Windows SDL2 paths
+WIN_SDL=/tmp/win-libs
+SDL2_DIR=$(WIN_SDL)/SDL2-2.30.0/x86_64-w64-mingw32
+SDL2_IMAGE_DIR=$(WIN_SDL)/SDL2_image-2.8.2/x86_64-w64-mingw32
+SDL2_TTF_DIR=$(WIN_SDL)/SDL2_ttf-2.22.0/x86_64-w64-mingw32
+SDL2_MIXER_DIR=$(WIN_SDL)/SDL2_mixer-2.8.0/x86_64-w64-mingw32
+
+# Compiler flags
+CFLAGS=-Wall -Wextra -O2 -std=c11 \
+	-I$(INCLUDE_DIR) \
+	-I$(MPAPI_DIR) \
+	-I$(MPAPI_DIR)/jansson \
+	-I$(SDL2_DIR)/include \
+	-I$(SDL2_DIR)/include/SDL2 \
+	-I$(SDL2_IMAGE_DIR)/include \
+	-I$(SDL2_TTF_DIR)/include \
+	-I$(SDL2_MIXER_DIR)/include \
+	-D_GNU_SOURCE
+
+# Linker flags
+LDFLAGS=-L$(SDL2_DIR)/lib \
+	-L$(SDL2_IMAGE_DIR)/lib \
+	-L$(SDL2_TTF_DIR)/lib \
+	-L$(SDL2_MIXER_DIR)/lib \
+	-lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer \
+	-lpthread -lws2_32 -liphlpapi -lrpcrt4 -lm -mwindows
+
+# Game source files
+GAME_SOURCES=$(SRC_DIR)/snake.c \
+             $(SRC_DIR)/game.c \
+             $(SRC_DIR)/renderer.c \
+             $(SRC_DIR)/audio.c \
+             $(SRC_DIR)/multiplayer.c \
+             $(SRC_DIR)/scoreboard.c \
+             $(SRC_DIR)/input.c \
+             $(SRC_DIR)/main.c
+
+# mpapi source files
+MPAPI_SOURCES=$(MPAPI_DIR)/mpapi.c \
+              $(wildcard $(MPAPI_DIR)/jansson/*.c)
+
+# All sources
+SOURCES=$(GAME_SOURCES) $(MPAPI_SOURCES)
+
+# Game object files
+GAME_OBJECTS=$(BUILD_DIR)/snake.o \
+             $(BUILD_DIR)/game.o \
+             $(BUILD_DIR)/renderer.o \
+             $(BUILD_DIR)/audio.o \
+             $(BUILD_DIR)/multiplayer.o \
+             $(BUILD_DIR)/scoreboard.o \
+             $(BUILD_DIR)/input.o \
+             $(BUILD_DIR)/main.o
+
+# mpapi object files
+MPAPI_OBJECTS=$(patsubst $(MPAPI_DIR)/%.c,$(BUILD_DIR)/mpapi_%.o,$(MPAPI_SOURCES))
+
+# All object files
+OBJECTS=$(GAME_OBJECTS) $(MPAPI_OBJECTS)
+
+# Executable name
+EXECUTABLE=snejk2d.exe
+
+# Default target
+all: $(EXECUTABLE)
+	@echo ""
+	@echo "✓ Windows build complete!"
+	@echo "Copy DLLs with: make copy-dlls"
+	@echo ""
+
+# Link object files
+$(EXECUTABLE): $(OBJECTS)
+	@echo "Linking $(EXECUTABLE)..."
+	@$(CC) $(OBJECTS) -o $@ $(LDFLAGS)
+
+# Compile game source files
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+	@echo "Compiling $<..."
+	@mkdir -p $(BUILD_DIR)
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+# Compile mpapi source files
+$(BUILD_DIR)/mpapi_%.o: $(MPAPI_DIR)/%.c
+	@echo "Compiling mpapi: $<..."
+	@mkdir -p $(dir $@)
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+# Copy required DLLs
+copy-dlls:
+	@echo "Copying Windows DLLs..."
+	@cp win64_deps/dlls/*.dll .
+	@echo "✓ DLLs copied"
+
+# Clean build files
+clean:
+	@echo "Cleaning up..."
+	@rm -rf $(BUILD_DIR) $(EXECUTABLE)
+
+.PHONY: all clean copy-dlls
