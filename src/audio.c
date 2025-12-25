@@ -45,19 +45,19 @@ bool Audio_Init(AudioSystem *_Audio)
     }
 
     // Load background music
-    _Audio->menuMusic = Mix_LoadMUS("assets_clean/music/menu.ogg");
+    _Audio->menuMusic = Mix_LoadMUS("assets/music/menu.ogg");
     if (!_Audio->menuMusic)
     {
         fprintf(stderr, "Warning: Failed to load menu music: %s\n", Mix_GetError());
     }
 
-    _Audio->singleplayerMusic = Mix_LoadMUS("assets_clean/music/singleplayer.ogg");
+    _Audio->singleplayerMusic = Mix_LoadMUS("assets/music/singleplayer.ogg");
     if (!_Audio->singleplayerMusic)
     {
         fprintf(stderr, "Warning: Failed to load singleplayer music: %s\n", Mix_GetError());
     }
 
-    _Audio->multiplayerMusic = Mix_LoadMUS("assets_clean/music/multiplayer.ogg");
+    _Audio->multiplayerMusic = Mix_LoadMUS("assets/music/multiplayer.ogg");
     if (!_Audio->multiplayerMusic)
     {
         fprintf(stderr, "Warning: Failed to load multiplayer music: %s\n", Mix_GetError());

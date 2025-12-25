@@ -61,9 +61,9 @@ bool Renderer_Init(Renderer *_Renderer)
     }
 
     /* Load fonts */
-    _Renderer->fontLarge = TTF_OpenFont("assets_clean/fonts/PressStart2P-Regular.ttf", 24);
-    _Renderer->fontMedium = TTF_OpenFont("assets_clean/fonts/PressStart2P-Regular.ttf", 16);
-    _Renderer->fontSmall = TTF_OpenFont("assets_clean/fonts/PressStart2P-Regular.ttf", 12);
+    _Renderer->fontLarge = TTF_OpenFont("assets/fonts/PressStart2P-Regular.ttf", 24);
+    _Renderer->fontMedium = TTF_OpenFont("assets/fonts/PressStart2P-Regular.ttf", 16);
+    _Renderer->fontSmall = TTF_OpenFont("assets/fonts/PressStart2P-Regular.ttf", 12);
 
     if (!_Renderer->fontLarge || !_Renderer->fontMedium || !_Renderer->fontSmall)
     {
@@ -74,9 +74,9 @@ bool Renderer_Init(Renderer *_Renderer)
     /* Load backgrounds (5 total) */
     /* 0: Cyberpunk Street */
     _Renderer->backgrounds[0].numLayers = 3;
-    _Renderer->backgrounds[0].layers[0] = loadTexture(_Renderer->sdlRenderer, "assets_clean/backgrounds/cyberpunk/far-buildings.png");
-    _Renderer->backgrounds[0].layers[1] = loadTexture(_Renderer->sdlRenderer, "assets_clean/backgrounds/cyberpunk/back-buildings.png");
-    _Renderer->backgrounds[0].layers[2] = loadTexture(_Renderer->sdlRenderer, "assets_clean/backgrounds/cyberpunk/foreground.png");
+    _Renderer->backgrounds[0].layers[0] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/cyberpunk/far-buildings.png");
+    _Renderer->backgrounds[0].layers[1] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/cyberpunk/back-buildings.png");
+    _Renderer->backgrounds[0].layers[2] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/cyberpunk/foreground.png");
     _Renderer->backgrounds[0].scrollSpeeds[0] = 0.2f;
     _Renderer->backgrounds[0].scrollSpeeds[1] = 0.5f;
     _Renderer->backgrounds[0].scrollSpeeds[2] = 1.0f;
@@ -84,10 +84,10 @@ bool Renderer_Init(Renderer *_Renderer)
 
     /* 1: Forest */
     _Renderer->backgrounds[1].numLayers = 4;
-    _Renderer->backgrounds[1].layers[0] = loadTexture(_Renderer->sdlRenderer, "assets_clean/backgrounds/forest/parallax-forest-back-trees.png");
-    _Renderer->backgrounds[1].layers[1] = loadTexture(_Renderer->sdlRenderer, "assets_clean/backgrounds/forest/parallax-forest-middle-trees.png");
-    _Renderer->backgrounds[1].layers[2] = loadTexture(_Renderer->sdlRenderer, "assets_clean/backgrounds/forest/parallax-forest-front-trees.png");
-    _Renderer->backgrounds[1].layers[3] = loadTexture(_Renderer->sdlRenderer, "assets_clean/backgrounds/forest/parallax-forest-lights.png");
+    _Renderer->backgrounds[1].layers[0] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/forest/parallax-forest-back-trees.png");
+    _Renderer->backgrounds[1].layers[1] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/forest/parallax-forest-middle-trees.png");
+    _Renderer->backgrounds[1].layers[2] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/forest/parallax-forest-front-trees.png");
+    _Renderer->backgrounds[1].layers[3] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/forest/parallax-forest-lights.png");
     _Renderer->backgrounds[1].scrollSpeeds[0] = 0.2f;
     _Renderer->backgrounds[1].scrollSpeeds[1] = 0.5f;
     _Renderer->backgrounds[1].scrollSpeeds[2] = 1.0f;
@@ -96,11 +96,11 @@ bool Renderer_Init(Renderer *_Renderer)
 
     /* 2: Underwater */
     _Renderer->backgrounds[2].numLayers = 5;
-    _Renderer->backgrounds[2].layers[0] = loadTexture(_Renderer->sdlRenderer, "assets_clean/backgrounds/underwater/far.png");
-    _Renderer->backgrounds[2].layers[1] = loadTexture(_Renderer->sdlRenderer, "assets_clean/backgrounds/underwater/sand.png");
-    _Renderer->backgrounds[2].layers[2] = loadTexture(_Renderer->sdlRenderer, "assets_clean/backgrounds/underwater/foreground-1.png");
-    _Renderer->backgrounds[2].layers[3] = loadTexture(_Renderer->sdlRenderer, "assets_clean/backgrounds/underwater/foreground-2.png");
-    _Renderer->backgrounds[2].layers[4] = loadTexture(_Renderer->sdlRenderer, "assets_clean/backgrounds/underwater/foregound-merged.png");
+    _Renderer->backgrounds[2].layers[0] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/underwater/far.png");
+    _Renderer->backgrounds[2].layers[1] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/underwater/sand.png");
+    _Renderer->backgrounds[2].layers[2] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/underwater/foreground-1.png");
+    _Renderer->backgrounds[2].layers[3] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/underwater/foreground-2.png");
+    _Renderer->backgrounds[2].layers[4] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/underwater/foregound-merged.png");
     _Renderer->backgrounds[2].scrollSpeeds[0] = 0.1f;
     _Renderer->backgrounds[2].scrollSpeeds[1] = 0.0f;
     _Renderer->backgrounds[2].scrollSpeeds[2] = 0.5f;
@@ -110,12 +110,12 @@ bool Renderer_Init(Renderer *_Renderer)
 
     /* 3: Mountain Dusk */
     _Renderer->backgrounds[3].numLayers = 6;
-    _Renderer->backgrounds[3].layers[0] = loadTexture(_Renderer->sdlRenderer, "assets_clean/backgrounds/mountain/sky.png");
-    _Renderer->backgrounds[3].layers[1] = loadTexture(_Renderer->sdlRenderer, "assets_clean/backgrounds/mountain/far-mountains.png");
-    _Renderer->backgrounds[3].layers[2] = loadTexture(_Renderer->sdlRenderer, "assets_clean/backgrounds/mountain/mountains.png");
-    _Renderer->backgrounds[3].layers[3] = loadTexture(_Renderer->sdlRenderer, "assets_clean/backgrounds/mountain/far-clouds.png");
-    _Renderer->backgrounds[3].layers[4] = loadTexture(_Renderer->sdlRenderer, "assets_clean/backgrounds/mountain/near-clouds.png");
-    _Renderer->backgrounds[3].layers[5] = loadTexture(_Renderer->sdlRenderer, "assets_clean/backgrounds/mountain/trees.png");
+    _Renderer->backgrounds[3].layers[0] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/mountain/sky.png");
+    _Renderer->backgrounds[3].layers[1] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/mountain/far-mountains.png");
+    _Renderer->backgrounds[3].layers[2] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/mountain/mountains.png");
+    _Renderer->backgrounds[3].layers[3] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/mountain/far-clouds.png");
+    _Renderer->backgrounds[3].layers[4] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/mountain/near-clouds.png");
+    _Renderer->backgrounds[3].layers[5] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/mountain/trees.png");
     _Renderer->backgrounds[3].scrollSpeeds[0] = 0.0f;
     _Renderer->backgrounds[3].scrollSpeeds[1] = 0.2f;
     _Renderer->backgrounds[3].scrollSpeeds[2] = 0.4f;
@@ -126,8 +126,8 @@ bool Renderer_Init(Renderer *_Renderer)
 
     /* 4: Country Platform */
     _Renderer->backgrounds[4].numLayers = 2;
-    _Renderer->backgrounds[4].layers[0] = loadTexture(_Renderer->sdlRenderer, "assets_clean/backgrounds/country/country-platform-back.png");
-    _Renderer->backgrounds[4].layers[1] = loadTexture(_Renderer->sdlRenderer, "assets_clean/backgrounds/country/country-platform-forest.png");
+    _Renderer->backgrounds[4].layers[0] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/country/country-platform-back.png");
+    _Renderer->backgrounds[4].layers[1] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/country/country-platform-forest.png");
     _Renderer->backgrounds[4].scrollSpeeds[0] = 0.3f;
     _Renderer->backgrounds[4].scrollSpeeds[1] = 1.0f;
     _Renderer->backgrounds[4].scrollOffset = 0.0f;
@@ -149,16 +149,16 @@ bool Renderer_Init(Renderer *_Renderer)
     for (int i = 0; i < MEDAL_FRAMES; i++)
     {
         char path[256];
-        snprintf(path, sizeof(path), "assets_clean/medals/Platinum%02d.png", i + 1);
+        snprintf(path, sizeof(path), "assets/medals/Platinum%02d.png", i + 1);
         _Renderer->medalPlatinum[i] = loadTexture(_Renderer->sdlRenderer, path);
 
-        snprintf(path, sizeof(path), "assets_clean/medals/Gold%02d.png", i + 1);
+        snprintf(path, sizeof(path), "assets/medals/Gold%02d.png", i + 1);
         _Renderer->medalGold[i] = loadTexture(_Renderer->sdlRenderer, path);
 
-        snprintf(path, sizeof(path), "assets_clean/medals/Silver%02d.png", i + 1);
+        snprintf(path, sizeof(path), "assets/medals/Silver%02d.png", i + 1);
         _Renderer->medalSilver[i] = loadTexture(_Renderer->sdlRenderer, path);
 
-        snprintf(path, sizeof(path), "assets_clean/medals/Bronze%02d.png", i + 1);
+        snprintf(path, sizeof(path), "assets/medals/Bronze%02d.png", i + 1);
         _Renderer->medalBronze[i] = loadTexture(_Renderer->sdlRenderer, path);
     }
     printf("✓ Loaded medal animations\n");
@@ -2060,63 +2060,51 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
         {
             Renderer_DrawMultiplayerGame(_Renderer, _MpCtx);
 
-            // Show countdown with READY, STEADY, GO!!! (DISCO MODE) over game field
+            // Show minimalistic countdown (3, 2, 1) over game field
             if (_MpCtx->state == MP_STATE_COUNTDOWN)
             {
                 int seconds_left = (_MpCtx->gameStartTime - _CurrentTime) / 1000 + 1;
+                int time_in_second = _CurrentTime % 1000;
 
-                // Disco overlay - rotating colors every 100ms
-                int colorPhase = (_CurrentTime / 100) % 6;
-                SDL_Color overlayColors[] = {
-                    {255, 0, 0, 80},     // Red
-                    {255, 128, 0, 80},   // Orange
-                    {255, 255, 0, 80},   // Yellow
-                    {0, 255, 0, 80},     // Green
-                    {0, 128, 255, 80},   // Blue
-                    {128, 0, 255, 80}    // Purple
-                };
-
+                // Black overlay - fully opaque for 3 and 2, fading out for 1
                 SDL_SetRenderDrawBlendMode(_Renderer->sdlRenderer, SDL_BLENDMODE_BLEND);
-                SDL_SetRenderDrawColor(_Renderer->sdlRenderer,
-                                        overlayColors[colorPhase].r,
-                                        overlayColors[colorPhase].g,
-                                        overlayColors[colorPhase].b,
-                                        overlayColors[colorPhase].a);
+                int overlay_alpha = 255;
+                if (seconds_left == 1)
+                {
+                    // Fade from black (255) to transparent (0) during the last second
+                    overlay_alpha = 255 - (time_in_second * 255 / 1000);
+                }
+                SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 0, 0, 0, overlay_alpha);
                 SDL_Rect overlayRect = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
                 SDL_RenderFillRect(_Renderer->sdlRenderer, &overlayRect);
 
                 const char *countdown_text = NULL;
                 if (seconds_left == 3)
-                    countdown_text = "READY";
+                    countdown_text = "3";
                 else if (seconds_left == 2)
-                    countdown_text = "STEADY";
+                    countdown_text = "2";
                 else if (seconds_left == 1)
-                    countdown_text = "GO!!!";
+                    countdown_text = "1";
 
                 if (countdown_text)
                 {
-                    // Rotating text colors (8 colors, every 80ms)
-                    int textColorPhase = (_CurrentTime / 80) % 8;
-                    SDL_Color textColors[] = {
-                        {255, 0, 0, 255},     // Red
-                        {255, 128, 0, 255},   // Orange
-                        {255, 255, 0, 255},   // Yellow
-                        {0, 255, 0, 255},     // Green
-                        {0, 255, 255, 255},   // Cyan
-                        {0, 128, 255, 255},   // Blue
-                        {128, 0, 255, 255},   // Purple
-                        {255, 0, 255, 255}    // Magenta
-                    };
+                    // Clean white color
+                    SDL_Color white = {255, 255, 255, 255};
 
-                    // Pulse effect - scale text up and down (±20%)
-                    float pulse = 1.0f + 0.2f * sinf((_CurrentTime % 1000) * 0.006283f);
+                    // Smooth pulse effect - grows from 0.6 to 1.2 scale over the second
+                    float pulse = 0.6f + 0.6f * (time_in_second / 1000.0f);
 
-                    SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontLarge, countdown_text, textColors[textColorPhase]);
+                    // Fade in effect at start of each second
+                    int text_alpha = (time_in_second < 100) ? (time_in_second * 255 / 100) : 255;
+
+                    SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontLarge, countdown_text, white);
                     if (surface)
                     {
                         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, surface);
                         if (texture)
                         {
+                            SDL_SetTextureAlphaMod(texture, text_alpha);
+
                             int pulsed_w = (int)(surface->w * pulse);
                             int pulsed_h = (int)(surface->h * pulse);
 
