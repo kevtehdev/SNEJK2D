@@ -997,14 +997,13 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
     }
 
     // Instructions
-    SDL_Surface *inst_surface = TTF_RenderText_Solid(_Renderer->fontSmall,
-        "UP DOWN SELECT   LEFT RIGHT ADJUST   ENTER RESET   ESC BACK", white);
+    SDL_Surface *inst_surface = TTF_RenderText_Solid(_Renderer->fontSmall, "SETTINGS AUTO SAVE   ESC BACK", white);
     if (inst_surface)
     {
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, inst_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - inst_surface->w/2, 430, inst_surface->w, inst_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH/2 - inst_surface->w/2, WINDOW_HEIGHT - 60, inst_surface->w, inst_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }

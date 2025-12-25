@@ -7,7 +7,6 @@ snejk2d
 .md/
 
 # Game data (user-specific)
-scoreboard.json
 achievements.json
 config.ini
 

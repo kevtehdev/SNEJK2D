@@ -664,6 +664,18 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
                 dir = DIR_RIGHT;
                 hasInput = true;
                 break;
+            case SDLK_ESCAPE:
+                // Broadcast disconnect to other player
+                if (_MpCtx->api)
+                {
+                    json_t *message = json_object();
+                    json_object_set_new(message, "type", json_string("host_disconnect"));
+                    mpapi_game(_MpCtx->api, message, NULL);
+                    json_decref(message);
+                }
+                // Mark for disconnection - this will return both players to main menu
+                _MpCtx->state = MP_STATE_DISCONNECTED;
+                break;
             }
 
             if (hasInput)
