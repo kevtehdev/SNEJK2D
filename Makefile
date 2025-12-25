@@ -38,6 +38,7 @@ GAME_SOURCES=$(SRC_DIR)/snake.c \
              $(SRC_DIR)/audio.c \
              $(SRC_DIR)/multiplayer.c \
              $(SRC_DIR)/scoreboard.c \
+             $(SRC_DIR)/settings.c \
              $(SRC_DIR)/input.c \
              $(SRC_DIR)/main.c
 
@@ -55,6 +56,7 @@ GAME_OBJECTS=$(BUILD_DIR)/snake.o \
              $(BUILD_DIR)/audio.o \
              $(BUILD_DIR)/multiplayer.o \
              $(BUILD_DIR)/scoreboard.o \
+             $(BUILD_DIR)/settings.o \
              $(BUILD_DIR)/input.o \
              $(BUILD_DIR)/main.o
 

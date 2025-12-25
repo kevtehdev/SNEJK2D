@@ -3,6 +3,7 @@
 
 #include "config.h"
 #include "snake.h"
+#include "settings.h"
 #include <SDL2/SDL.h>
 #include <stdbool.h>
 
@@ -14,6 +15,7 @@ typedef enum {
     GAME_PAUSED,
     GAME_OVER,
     GAME_SCOREBOARD,     // Scoreboard view
+    GAME_OPTIONS,        // Settings menu
     GAME_MULTIPLAYER     // Multiplayer mode (separate state)
 } GameState;
 
@@ -52,6 +54,10 @@ typedef struct {
 
     // Highscore flag
     bool isHighscore;            // True if current score is a highscore
+
+    // Options menu
+    int optionsSelection;        // 0-4: menu music, game music, grid alpha, brightness, reset
+    Settings settings;
 } Game;
 
 /* Initialize game state and all subsystems */
