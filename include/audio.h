@@ -40,6 +40,6 @@ void Audio_PlayMultiplayerMusic(AudioSystem *_Audio);
 void Audio_StopMusic(AudioSystem *_Audio);
 
 // State-based music handling (uses int for state enums to avoid circular dependencies)
-void Audio_UpdateMusicForState(AudioSystem *_Audio, int _GameState, int _MpState);
+void Audio_UpdateMusicForState(AudioSystem *_Audio, int _GameState, int _MpState, bool _MenuMusicEnabled, bool _GameMusicEnabled);
 
 #endif

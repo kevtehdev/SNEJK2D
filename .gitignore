@@ -7,7 +7,6 @@ snejk2d
 .md/
 
 # Game data (user-specific)
-scoreboard.json
 achievements.json
 config.ini
 
@@ -28,3 +27,4 @@ tests/test_*
 # Old/unused asset folders
 assets/
 !assets_clean/
+settings.conf
