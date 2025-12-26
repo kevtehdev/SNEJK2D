@@ -143,6 +143,7 @@ typedef struct {
     int currentAttempt;          // Current attempt number (0-2)
     unsigned int attemptStartTime;
     Game localGame;              // Local game instance for turn battle
+    int resultPageIndex;         // Current page in results view (0 = winner, 1 = 2nd place, etc.)
 } MultiplayerContext;
 
 // Lifecycle

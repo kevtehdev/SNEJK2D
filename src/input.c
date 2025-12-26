@@ -583,12 +583,28 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
             case SDLK_RETURN:
                 if (_MpCtx->isHost && Multiplayer_AllReady(_MpCtx))
                 {
-                    // Start turn battle - all players start their first attempt
+                    // Broadcast start command to all clients
+                    json_t *message = json_object();
+                    json_object_set_new(message, "type", json_string("start_turn_attempt"));
+                    json_object_set_new(message, "attempt", json_integer(0));
+                    mpapi_game(_MpCtx->api, message, NULL);
+                    json_decref(message);
+
+                    // Start turn battle for host
                     _MpCtx->currentAttempt = 0;
                     Multiplayer_StartTurnAttempt(_MpCtx);
                 }
                 break;
             case SDLK_ESCAPE:
+                // Host broadcasts cancel to lobby
+                if (_MpCtx->isHost && _MpCtx->api)
+                {
+                    json_t *message = json_object();
+                    json_object_set_new(message, "type", json_string("cancel_ready_up"));
+                    mpapi_game(_MpCtx->api, message, NULL);
+                    json_decref(message);
+                }
+
                 // Cancel and return to lobby
                 // Reset ready states
                 for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
@@ -604,6 +620,15 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
             // Waiting for other players to finish
             if (_Event->key.keysym.sym == SDLK_ESCAPE)
             {
+                // Broadcast that we're leaving before disconnecting
+                if (_MpCtx->api)
+                {
+                    json_t *leaveMsg = json_object();
+                    json_object_set_new(leaveMsg, "type", json_string("player_leaving"));
+                    mpapi_game(_MpCtx->api, leaveMsg, NULL);
+                    json_decref(leaveMsg);
+                }
+
                 // Disconnect
                 _MpCtx->state = MP_STATE_DISCONNECTED;
             }
@@ -613,7 +638,27 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
             // Results screen
             switch (_Event->key.keysym.sym)
             {
+            case SDLK_LEFT:
+            case SDLK_a:
+                // Navigate to previous player
+                if (_MpCtx->resultPageIndex > 0)
+                    _MpCtx->resultPageIndex--;
+                break;
+            case SDLK_RIGHT:
+            case SDLK_d:
+                // Navigate to next player (will be clamped by renderer)
+                _MpCtx->resultPageIndex++;
+                break;
             case SDLK_RETURN:
+                // Host broadcasts return to lobby
+                if (_MpCtx->isHost && _MpCtx->api)
+                {
+                    json_t *message = json_object();
+                    json_object_set_new(message, "type", json_string("return_to_lobby"));
+                    mpapi_game(_MpCtx->api, message, NULL);
+                    json_decref(message);
+                }
+
                 // Return to lobby for another round
                 _MpCtx->state = MP_STATE_LOBBY;
 
@@ -626,8 +671,18 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
                     _MpCtx->players[i].bestScore = 0;
                 }
                 _MpCtx->currentAttempt = 0;
+                _MpCtx->resultPageIndex = 0;
                 break;
             case SDLK_ESCAPE:
+                // Broadcast that we're leaving before disconnecting
+                if (_MpCtx->api)
+                {
+                    json_t *leaveMsg = json_object();
+                    json_object_set_new(leaveMsg, "type", json_string("player_leaving"));
+                    mpapi_game(_MpCtx->api, leaveMsg, NULL);
+                    json_decref(leaveMsg);
+                }
+
                 // Return to main menu
                 _MpCtx->state = MP_STATE_DISCONNECTED;
                 break;
