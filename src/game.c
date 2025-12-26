@@ -9,7 +9,9 @@ void Game_Init(Game *_Game)
     srand(time(NULL));
 
     _Game->state = GAME_MAIN_MENU;  // Start at main menu
-    _Game->selectedBackground = 0;  // Cyberpunk Street
+    _Game->gameMode = MODE_CLASSIC;  // Default to classic mode
+    _Game->modeSelection = 0;        // 0 = Classic
+    _Game->selectedBackground = 0;   // Cyberpunk Street
     _Game->currentSpeed = BASE_SPEED;
     _Game->lastMoveTime = 0;
     _Game->running = true;
@@ -38,6 +40,17 @@ void Game_Init(Game *_Game)
     Settings_Init(&_Game->settings);
     Settings_Load(&_Game->settings);
 
+    // Initialize power-ups array
+    for (int i = 0; i < MAX_POWERUPS; i++)
+    {
+        _Game->powerUps[i].active = false;
+        _Game->powerUps[i].type = POWERUP_NONE;
+    }
+    _Game->powerUpStatus.hasShield = false;
+    _Game->powerUpStatus.speedBoostActive = false;
+    _Game->powerUpStatus.scoreMultiplierActive = false;
+    _Game->powerUpStatus.normalSpeed = BASE_SPEED;
+
     Snake_Init(&_Game->snake);
     Game_SpawnFood(_Game);
 }
@@ -45,26 +58,127 @@ void Game_Init(Game *_Game)
 void Game_SpawnFood(Game *_Game)
 {
     bool valid = false;
+    Position spawnPos;
+    int playableWidth = PLAYABLE_MAX_X - PLAYABLE_MIN_X + 1;
+    int playableHeight = PLAYABLE_MAX_Y - PLAYABLE_MIN_Y + 1;
 
+    // Find valid position for regular food
     while (!valid)
     {
-        // Spawn food within playable area (avoiding HUD border)
-        int playableWidth = PLAYABLE_MAX_X - PLAYABLE_MIN_X + 1;
-        int playableHeight = PLAYABLE_MAX_Y - PLAYABLE_MIN_Y + 1;
-
-        _Game->food.x = PLAYABLE_MIN_X + (rand() % playableWidth);
-        _Game->food.y = PLAYABLE_MIN_Y + (rand() % playableHeight);
+        spawnPos.x = PLAYABLE_MIN_X + (rand() % playableWidth);
+        spawnPos.y = PLAYABLE_MIN_Y + (rand() % playableHeight);
 
         valid = true;
 
         // Check if food spawns on snake
         for (int i = 0; i < _Game->snake.length; i++)
         {
-            if (_Game->food.x == _Game->snake.segments[i].x &&
-                _Game->food.y == _Game->snake.segments[i].y)
+            if (spawnPos.x == _Game->snake.segments[i].x &&
+                spawnPos.y == _Game->snake.segments[i].y)
             {
                 valid = false;
                 break;
+            }
+        }
+
+        // Check if food spawns on existing power-ups
+        if (valid && _Game->gameMode == MODE_POWERUP)
+        {
+            for (int i = 0; i < MAX_POWERUPS; i++)
+            {
+                if (_Game->powerUps[i].active &&
+                    spawnPos.x == _Game->powerUps[i].position.x &&
+                    spawnPos.y == _Game->powerUps[i].position.y)
+                {
+                    valid = false;
+                    break;
+                }
+            }
+        }
+    }
+
+    // Set food position
+    _Game->food.x = spawnPos.x;
+    _Game->food.y = spawnPos.y;
+
+    // In Power-Up mode, spawn multiple power-ups
+    if (_Game->gameMode == MODE_POWERUP)
+    {
+        // Create array of power-up types for guaranteed variety
+        PowerUpType powerUpPool[4] = {
+            POWERUP_GOLDEN_APPLE,
+            POWERUP_SHIELD,
+            POWERUP_SPEED_BOOST,
+            POWERUP_SCORE_MULTIPLIER
+        };
+
+        for (int p = 0; p < POWERUP_MODE_COUNT; p++)
+        {
+            // Find a free slot
+            int slot = -1;
+            for (int i = 0; i < MAX_POWERUPS; i++)
+            {
+                if (!_Game->powerUps[i].active)
+                {
+                    slot = i;
+                    break;
+                }
+            }
+
+            if (slot == -1)
+                continue; // No free slot
+
+            // Pick random power-up type from pool (guaranteed valid)
+            PowerUpType spawnType = powerUpPool[rand() % 4];
+
+            // Find valid position for power-up
+            valid = false;
+            int attempts = 0;
+            while (!valid && attempts < 50)
+            {
+                spawnPos.x = PLAYABLE_MIN_X + (rand() % playableWidth);
+                spawnPos.y = PLAYABLE_MIN_Y + (rand() % playableHeight);
+
+                valid = true;
+                attempts++;
+
+                // Check snake
+                for (int i = 0; i < _Game->snake.length; i++)
+                {
+                    if (spawnPos.x == _Game->snake.segments[i].x &&
+                        spawnPos.y == _Game->snake.segments[i].y)
+                    {
+                        valid = false;
+                        break;
+                    }
+                }
+
+                // Check food
+                if (valid && spawnPos.x == _Game->food.x && spawnPos.y == _Game->food.y)
+                    valid = false;
+
+                // Check other power-ups
+                if (valid)
+                {
+                    for (int i = 0; i < MAX_POWERUPS; i++)
+                    {
+                        if (_Game->powerUps[i].active &&
+                            spawnPos.x == _Game->powerUps[i].position.x &&
+                            spawnPos.y == _Game->powerUps[i].position.y)
+                        {
+                            valid = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (valid)
+            {
+                _Game->powerUps[slot].active = true;
+                _Game->powerUps[slot].type = spawnType;
+                _Game->powerUps[slot].position = spawnPos;
+                _Game->powerUps[slot].spawnTime = SDL_GetTicks();
             }
         }
     }
@@ -116,6 +230,37 @@ void Game_Update(Game *_Game)
         }
     }
 
+    // Check power-up timers
+    if (_Game->powerUpStatus.speedBoostActive && currentTime >= _Game->powerUpStatus.speedBoostEndTime)
+    {
+        // Speed boost expired, restore normal speed
+        _Game->powerUpStatus.speedBoostActive = false;
+        _Game->currentSpeed = _Game->powerUpStatus.normalSpeed;
+    }
+
+    if (_Game->powerUpStatus.scoreMultiplierActive && currentTime >= _Game->powerUpStatus.scoreMultiplierEndTime)
+    {
+        // Score multiplier expired
+        _Game->powerUpStatus.scoreMultiplierActive = false;
+    }
+
+    // Check power-up decay (Power-Up mode only)
+    if (_Game->gameMode == MODE_POWERUP)
+    {
+        for (int i = 0; i < MAX_POWERUPS; i++)
+        {
+            if (_Game->powerUps[i].active)
+            {
+                unsigned int age = currentTime - _Game->powerUps[i].spawnTime;
+                if (age >= POWERUP_DECAY_TIME)
+                {
+                    // Power-up has decayed, remove it
+                    _Game->powerUps[i].active = false;
+                }
+            }
+        }
+    }
+
     // Check if it's time to move
     if (currentTime - _Game->lastMoveTime >= _Game->currentSpeed)
     {
@@ -163,12 +308,22 @@ void Game_Update(Game *_Game)
             }
         }
 
-        // If collision detected, don't move - just die
+        // If collision detected, check shield
         if (wouldHitWall || wouldHitSelf)
         {
-            _Game->snake.alive = false;
-            _Game->state = GAME_OVER;
-            return;
+            if (_Game->powerUpStatus.hasShield)
+            {
+                // Shield absorbs the hit!
+                _Game->powerUpStatus.hasShield = false;
+                // Don't move into collision, just consume shield and continue
+                return;
+            }
+            else
+            {
+                _Game->snake.alive = false;
+                _Game->state = GAME_OVER;
+                return;
+            }
         }
 
         // Safe to move now
@@ -177,24 +332,130 @@ void Game_Update(Game *_Game)
         // Check food collision
         if (Game_CheckFoodCollision(_Game))
         {
+            // Base growth and combo
+            int growthAmount = 1;
+            int basePoints = 10;
+
             // Increase combo
             _Game->comboCount++;
             _Game->lastFoodTime = currentTime;
             updateComboMultiplier(_Game);
 
-            // Award points with multiplier
-            int basePoints = 10;
-            int points = (int)(basePoints * _Game->comboMultiplier);
+            // Award points with multipliers
+            float totalMultiplier = _Game->comboMultiplier;
+            if (_Game->powerUpStatus.scoreMultiplierActive)
+            {
+                totalMultiplier *= 10.0f; // 10x score multiplier
+            }
+            int points = (int)(basePoints * totalMultiplier);
             _Game->snake.score += points;
 
-            Snake_Grow(&_Game->snake);
+            // Grow snake
+            for (int i = 0; i < growthAmount; i++)
+            {
+                Snake_Grow(&_Game->snake);
+            }
+
             Game_SpawnFood(_Game);
 
-            // Increase speed (with cap at MIN_SPEED)
-            _Game->currentSpeed -= SPEED_INCREASE;
-            if (_Game->currentSpeed < MIN_SPEED)
+            // Increase speed (with cap at MIN_SPEED) - only if no speed boost active
+            if (!_Game->powerUpStatus.speedBoostActive)
             {
-                _Game->currentSpeed = MIN_SPEED;  // Speed cap!
+                _Game->currentSpeed -= SPEED_INCREASE;
+                if (_Game->currentSpeed < MIN_SPEED)
+                {
+                    _Game->currentSpeed = MIN_SPEED; // Speed cap!
+                }
+            }
+        }
+
+        // Check power-up collisions (Power-Up mode only)
+        if (_Game->gameMode == MODE_POWERUP)
+        {
+            Position head = _Game->snake.segments[0];
+
+            for (int i = 0; i < MAX_POWERUPS; i++)
+            {
+                if (!_Game->powerUps[i].active)
+                    continue;
+
+                if (head.x == _Game->powerUps[i].position.x &&
+                    head.y == _Game->powerUps[i].position.y)
+                {
+                    // Power-up collected!
+                    PowerUpType type = _Game->powerUps[i].type;
+                    _Game->powerUps[i].active = false; // Consume power-up
+
+                    // All power-ups refresh combo timer and give combo boost
+                    _Game->lastFoodTime = currentTime;
+
+                    switch (type)
+                    {
+                    case POWERUP_GOLDEN_APPLE:
+                        // +3 length, +100 points × combo, +5 combo
+                        for (int g = 0; g < 3; g++)
+                            Snake_Grow(&_Game->snake);
+
+                        float totalMult = _Game->comboMultiplier;
+                        if (_Game->powerUpStatus.scoreMultiplierActive)
+                            totalMult *= 10.0f;
+
+                        _Game->snake.score += (int)(100 * totalMult);
+                        _Game->comboCount += 5;
+                        updateComboMultiplier(_Game);
+                        break;
+
+                    case POWERUP_SHIELD:
+                        // +30 points × combo, +2 combo
+                        totalMult = _Game->comboMultiplier;
+                        if (_Game->powerUpStatus.scoreMultiplierActive)
+                            totalMult *= 10.0f;
+
+                        _Game->powerUpStatus.hasShield = true;
+                        _Game->snake.score += (int)(30 * totalMult);
+                        _Game->comboCount += 2;
+                        updateComboMultiplier(_Game);
+                        break;
+
+                    case POWERUP_SCORE_MULTIPLIER:
+                        // +50 points × combo, +3 combo, activate 10x multiplier
+                        totalMult = _Game->comboMultiplier;
+                        // Don't apply to itself, just combo
+
+                        _Game->powerUpStatus.scoreMultiplierActive = true;
+                        _Game->powerUpStatus.scoreMultiplierEndTime = currentTime + POWERUP_SCORE_MULT_DURATION;
+                        _Game->snake.score += (int)(50 * totalMult);
+                        _Game->comboCount += 3;
+                        updateComboMultiplier(_Game);
+                        break;
+
+                    case POWERUP_SPEED_BOOST:
+                        // +20 points × combo, +1 combo, temporary speed boost
+                        totalMult = _Game->comboMultiplier;
+                        if (_Game->powerUpStatus.scoreMultiplierActive)
+                            totalMult *= 10.0f;
+
+                        if (!_Game->powerUpStatus.speedBoostActive)
+                        {
+                            _Game->powerUpStatus.normalSpeed = _Game->currentSpeed;
+                        }
+                        _Game->powerUpStatus.speedBoostActive = true;
+                        _Game->powerUpStatus.speedBoostEndTime = currentTime + POWERUP_SPEED_BOOST_DURATION;
+
+                        // More moderate speed boost - 1.5x instead of 2x
+                        _Game->currentSpeed = (_Game->currentSpeed * 2) / 3;
+                        if (_Game->currentSpeed < 40)
+                            _Game->currentSpeed = 40; // More reasonable minimum
+
+                        _Game->snake.score += (int)(20 * totalMult);
+                        _Game->comboCount += 1;
+                        updateComboMultiplier(_Game);
+                        break;
+
+                    default:
+                        break;
+                    }
+                }
             }
         }
     }
@@ -215,6 +476,17 @@ void Game_Reset(Game *_Game)
     _Game->explosion.active = false;
     _Game->scoreSaved = false;
     _Game->isHighscore = false;
+
+    // Reset power-ups
+    for (int i = 0; i < MAX_POWERUPS; i++)
+    {
+        _Game->powerUps[i].active = false;
+        _Game->powerUps[i].type = POWERUP_NONE;
+    }
+    _Game->powerUpStatus.hasShield = false;
+    _Game->powerUpStatus.speedBoostActive = false;
+    _Game->powerUpStatus.scoreMultiplierActive = false;
+    _Game->powerUpStatus.normalSpeed = BASE_SPEED;
 
     Snake_Init(&_Game->snake);
     Game_SpawnFood(_Game);

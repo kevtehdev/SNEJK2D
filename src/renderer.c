@@ -343,7 +343,7 @@ void Renderer_DrawBrightnessOverlay(Renderer *_Renderer, float _Brightness)
 }
 
 /* Helper to draw HUD with combo/pulsing effect */
-static void drawHudWithPulse(Renderer *_Renderer, int _ComboCount, float _Multiplier)
+static void drawHudWithPulse(Renderer *_Renderer, int _ComboCount, float _Multiplier, bool _IsPowerUpMode, bool _ComboEffectsEnabled)
 {
     const int borderThickness = HUD_BORDER_THICKNESS;
     unsigned int time = SDL_GetTicks();
@@ -351,8 +351,21 @@ static void drawHudWithPulse(Renderer *_Renderer, int _ComboCount, float _Multip
     int hudR = 20, hudG = 20, hudB = 20;
     int alpha = 230;
 
-    /* Different effects based on combo tier */
-    if (_ComboCount == 0)
+    // If combo effects are disabled, always use static dark border
+    if (!_ComboEffectsEnabled)
+    {
+        hudR = 20;
+        hudG = 20;
+        hudB = 20;
+        alpha = 230;
+    }
+    // Power-Up mode has more intense effects
+    else
+    {
+        float intensityMult = _IsPowerUpMode ? 1.5f : 1.0f;
+
+        /* Different effects based on combo tier */
+        if (_ComboCount == 0)
     {
         /* Tier 1: No effect - static dark border */
         hudR = 20;
@@ -363,38 +376,39 @@ static void drawHudWithPulse(Renderer *_Renderer, int _ComboCount, float _Multip
     else if (_Multiplier < 2.0f)  /* Tier 2: 1.5x (3-4 combo) */
     {
         /* Slow pulse - white glow */
-        float pulse = (sinf(time * 2.0f / 1000.0f) + 1.0f) * 0.5f;  /* 0.0 to 1.0 */
-        int brightness = 20 + (int)(pulse * 50);
+        float pulse = (sinf(time * 2.0f * intensityMult / 1000.0f) + 1.0f) * 0.5f;
+        int brightness = 20 + (int)(pulse * 50 * intensityMult);
         hudR = brightness;
         hudG = brightness;
         hudB = brightness;
-        alpha = 230 - (int)(pulse * 20);
+        alpha = 230 - (int)(pulse * 20 * intensityMult);
     }
     else if (_Multiplier < 3.0f)  /* Tier 3: 2.0x (5-7 combo) */
     {
         /* Fast pulse - yellow tint */
-        float pulse = (sinf(time * 4.0f / 1000.0f) + 1.0f) * 0.5f;
+        float pulse = (sinf(time * 4.0f * intensityMult / 1000.0f) + 1.0f) * 0.5f;
         hudR = 255;
-        hudG = 255 - (int)(pulse * 80);  /* White → yellow */
+        hudG = 255 - (int)(pulse * 80);
         hudB = 100 - (int)(pulse * 80);
-        alpha = 230 - (int)(pulse * 30);
+        alpha = 230 - (int)(pulse * 30 * intensityMult);
     }
     else if (_Multiplier < 5.0f)  /* Tier 4: 3.0x (8-11 combo) */
     {
         /* Double pulse - orange glow */
-        float pulse1 = (sinf(time * 5.0f / 1000.0f) + 1.0f) * 0.5f;
-        float pulse2 = (sinf(time * 10.0f / 1000.0f) + 1.0f) * 0.5f;
+        float pulse1 = (sinf(time * 5.0f * intensityMult / 1000.0f) + 1.0f) * 0.5f;
+        float pulse2 = (sinf(time * 10.0f * intensityMult / 1000.0f) + 1.0f) * 0.5f;
         float combined = (pulse1 + pulse2) / 2.0f;
         hudR = 255;
-        hudG = 150 - (int)(combined * 80);  /* Orange */
+        hudG = 150 - (int)(combined * 80);
         hudB = 50 - (int)(combined * 50);
-        alpha = 230 - (int)(combined * 40);
+        alpha = 230 - (int)(combined * 40 * intensityMult);
     }
     else  /* Tier 5: 5.0x (12+ combo) */
     {
-        /* Rainbow flashing effect */
-        int colorPhase = (time / 150) % 6;  /* Change color every 150ms */
-        float pulse = (sinf(time * 6.0f / 1000.0f) + 1.0f) * 0.5f;
+        /* Rainbow flashing effect - faster in Power-Up mode */
+        int colorSpeed = _IsPowerUpMode ? 100 : 150;
+        int colorPhase = (time / colorSpeed) % 6;
+        float pulse = (sinf(time * 6.0f * intensityMult / 1000.0f) + 1.0f) * 0.5f;
 
         switch (colorPhase)
         {
@@ -405,7 +419,8 @@ static void drawHudWithPulse(Renderer *_Renderer, int _ComboCount, float _Multip
             case 4: hudR = (int)(pulse * 150); hudG = 0; hudB = 255; break;  /* Blue */
             case 5: hudR = 255; hudG = 0; hudB = 255; break;  /* Magenta */
         }
-        alpha = 220 - (int)(pulse * 50);
+        alpha = _IsPowerUpMode ? (200 - (int)(pulse * 70)) : (220 - (int)(pulse * 50));
+        }
     }
 
     SDL_SetRenderDrawBlendMode(_Renderer->sdlRenderer, SDL_BLENDMODE_BLEND);
@@ -474,7 +489,7 @@ void Renderer_DrawHudBorderWithScore(Renderer *_Renderer, int _Score)
     }
 }
 
-void Renderer_DrawHudBorderWithCombo(Renderer *_Renderer, int _Score, int _Combo, float _Multiplier)
+void Renderer_DrawHudBorderWithCombo(Renderer *_Renderer, int _Score, int _Combo, float _Multiplier, GameMode _GameMode, bool _ComboEffects)
 {
     if (!_Renderer || !_Renderer->sdlRenderer)
         return;
@@ -482,7 +497,8 @@ void Renderer_DrawHudBorderWithCombo(Renderer *_Renderer, int _Score, int _Combo
     const int borderThickness = HUD_BORDER_THICKNESS;
 
     /* Draw HUD with pulse effect based on combo */
-    drawHudWithPulse(_Renderer, _Combo, _Multiplier);
+    bool isPowerUpMode = (_GameMode == MODE_POWERUP);
+    drawHudWithPulse(_Renderer, _Combo, _Multiplier, isPowerUpMode, _ComboEffects);
 
     /* Draw SCORE text in the top HUD border */
     char scoreText[32];
@@ -625,6 +641,90 @@ void Renderer_DrawFood(Renderer *_Renderer, Position *_Food)
     SDL_RenderFillRect(_Renderer->sdlRenderer, &rect);
 }
 
+/* Draw power-up with special colors and effects */
+void Renderer_DrawPowerUp(Renderer *_Renderer, PowerUp *_PowerUp)
+{
+    if (!_PowerUp->active)
+        return;
+
+    SDL_Rect rect = {
+        _PowerUp->position.x * CELL_SIZE,
+        _PowerUp->position.y * CELL_SIZE,
+        CELL_SIZE,
+        CELL_SIZE
+    };
+
+    unsigned int time = SDL_GetTicks();
+    unsigned int age = time - _PowerUp->spawnTime;
+    float pulse = (sinf(time * 6.0f / 1000.0f) + 1.0f) * 0.5f; // Pulse effect
+
+    // Check if power-up is about to decay (flash warning)
+    bool isDecaying = (age >= (POWERUP_DECAY_TIME - POWERUP_DECAY_WARNING));
+    bool flashVisible = true;
+    if (isDecaying)
+    {
+        // Fast flashing in last 3 seconds
+        int flashSpeed = 150; // ms per flash
+        flashVisible = ((time / flashSpeed) % 2) == 0;
+    }
+
+    if (!flashVisible)
+        return; // Don't draw during flash-off phase
+
+    switch (_PowerUp->type)
+    {
+    case POWERUP_GOLDEN_APPLE:
+        // Gold/yellow with sparkle
+        SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 255, 215, 0, 255);
+        SDL_RenderFillRect(_Renderer->sdlRenderer, &rect);
+        // Inner highlight
+        SDL_Rect inner = {rect.x + 4, rect.y + 4, rect.w - 8, rect.h - 8};
+        SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 255, 255, 100, (int)(pulse * 200));
+        SDL_RenderFillRect(_Renderer->sdlRenderer, &inner);
+        break;
+
+    case POWERUP_SHIELD:
+        // Silver/white shield
+        SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 192, 192, 192, 255);
+        SDL_RenderFillRect(_Renderer->sdlRenderer, &rect);
+        // Outer border pulsing
+        SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 255, 255, 255, (int)(pulse * 255));
+        SDL_RenderDrawRect(_Renderer->sdlRenderer, &rect);
+        break;
+
+    case POWERUP_SPEED_BOOST:
+        // Yellow lightning
+        SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 255, 255, 0, 255);
+        SDL_RenderFillRect(_Renderer->sdlRenderer, &rect);
+        // Flashing white effect
+        if ((int)(pulse * 2) % 2 == 0)
+        {
+            SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 255, 255, 255, 200);
+            SDL_RenderFillRect(_Renderer->sdlRenderer, &rect);
+        }
+        break;
+
+    case POWERUP_SCORE_MULTIPLIER:
+        // Purple/magenta gem
+        SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 255, 0, 255, 255);
+        SDL_RenderFillRect(_Renderer->sdlRenderer, &rect);
+        // Diamond pattern
+        SDL_Point points[5] = {
+            {rect.x + CELL_SIZE / 2, rect.y + 2},
+            {rect.x + CELL_SIZE - 2, rect.y + CELL_SIZE / 2},
+            {rect.x + CELL_SIZE / 2, rect.y + CELL_SIZE - 2},
+            {rect.x + 2, rect.y + CELL_SIZE / 2},
+            {rect.x + CELL_SIZE / 2, rect.y + 2}
+        };
+        SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 255, 100, 255, (int)(pulse * 255));
+        SDL_RenderDrawLines(_Renderer->sdlRenderer, points, 5);
+        break;
+
+    default:
+        break;
+    }
+}
+
 /* Draw HUD (minimal for now) */
 void Renderer_DrawHud(Renderer *_Renderer, Game *_Game)
 {
@@ -706,6 +806,99 @@ void Renderer_DrawMenu(Renderer *_Renderer, int _SelectedBg)
 }
 
 /* Draw name input screen with blinking prompt */
+void Renderer_DrawModeSelect(Renderer *_Renderer, Game *_Game)
+{
+    SDL_Color white = {255, 255, 255, 255};
+    SDL_Color yellow = {255, 255, 0, 255};
+    SDL_Color gray = {150, 150, 150, 255};
+
+    /* Title */
+    SDL_Surface *titleSurface = TTF_RenderText_Solid(_Renderer->fontLarge, "SELECT GAME MODE", white);
+    if (titleSurface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, titleSurface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - titleSurface->w/2, 80, titleSurface->w, titleSurface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(titleSurface);
+    }
+
+    /* Classic Mode */
+    SDL_Color classicColor = (_Game->modeSelection == 0) ? yellow : gray;
+    SDL_Surface *classicSurface = TTF_RenderText_Solid(_Renderer->fontMedium, "CLASSIC MODE", classicColor);
+    if (classicSurface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, classicSurface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - classicSurface->w/2, 200, classicSurface->w, classicSurface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(classicSurface);
+    }
+
+    /* Classic description */
+    SDL_Surface *classicDescSurface = TTF_RenderText_Solid(_Renderer->fontSmall, "Original snake game", gray);
+    if (classicDescSurface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, classicDescSurface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - classicDescSurface->w/2, 235, classicDescSurface->w, classicDescSurface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(classicDescSurface);
+    }
+
+    /* Power-Up Mode */
+    SDL_Color powerupColor = (_Game->modeSelection == 1) ? yellow : gray;
+    SDL_Surface *powerupSurface = TTF_RenderText_Solid(_Renderer->fontMedium, "POWER-UP MODE", powerupColor);
+    if (powerupSurface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, powerupSurface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - powerupSurface->w/2, 300, powerupSurface->w, powerupSurface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(powerupSurface);
+    }
+
+    /* Power-Up description */
+    SDL_Surface *powerupDescSurface = TTF_RenderText_Solid(_Renderer->fontSmall, "Multiple power-ups for extreme gameplay", gray);
+    if (powerupDescSurface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, powerupDescSurface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - powerupDescSurface->w/2, 335, powerupDescSurface->w, powerupDescSurface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(powerupDescSurface);
+    }
+
+    /* Instructions */
+    SDL_Surface *instrSurface = TTF_RenderText_Solid(_Renderer->fontSmall, "ENTER to confirm, ESC to go back", gray);
+    if (instrSurface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, instrSurface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - instrSurface->w/2, 420, instrSurface->w, instrSurface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(instrSurface);
+    }
+}
+
 void Renderer_DrawNameInput(Renderer *_Renderer, Game *_Game, unsigned int _Tick)
 {
     /* Blinking colors - cycle through RGB */
@@ -1018,23 +1211,41 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, bright_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - bright_surface->w/2, 330, bright_surface->w, bright_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH/2 - bright_surface->w/2, 305, bright_surface->w, bright_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
         SDL_FreeSurface(bright_surface);
     }
 
+    // Combo Effects
+    SDL_Color combo_color = _Game->optionsSelection == 4 ? green : gray;
+    char combo_text[64];
+    snprintf(combo_text, sizeof(combo_text), "%s Combo HUD Effects: [%s]",
+             _Game->optionsSelection == 4 ? ">" : " ", _Game->settings.comboEffects ? "ON" : "OFF");
+    SDL_Surface *combo_surface = TTF_RenderText_Solid(_Renderer->fontMedium, combo_text, combo_color);
+    if (combo_surface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, combo_surface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - combo_surface->w/2, 345, combo_surface->w, combo_surface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(combo_surface);
+    }
+
     // Reset to defaults
-    const char *reset_text = _Game->optionsSelection == 4 ? "> RESET TO DEFAULTS " : "  RESET TO DEFAULTS  ";
-    SDL_Color reset_color = _Game->optionsSelection == 4 ? green : gray;
+    const char *reset_text = _Game->optionsSelection == 5 ? "> RESET TO DEFAULTS " : "  RESET TO DEFAULTS  ";
+    SDL_Color reset_color = _Game->optionsSelection == 5 ? green : gray;
     SDL_Surface *reset_surface = TTF_RenderText_Solid(_Renderer->fontMedium, reset_text, reset_color);
     if (reset_surface)
     {
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, reset_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - reset_surface->w/2, 390, reset_surface->w, reset_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH/2 - reset_surface->w/2, 395, reset_surface->w, reset_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1667,8 +1878,9 @@ void Renderer_DrawMultiplayerHudBorder(Renderer *_Renderer, MultiplayerContext *
         local_multiplier = _MpCtx->players[_MpCtx->localPlayerIndex].comboMultiplier;
     }
 
-    // Draw HUD with pulse effect based on combo
-    drawHudWithPulse(_Renderer, local_combo, local_multiplier);
+    // Draw HUD with pulse effect based on combo (multiplayer always uses classic mode visuals)
+    // Note: Multiplayer doesn't have access to settings, so default to true
+    drawHudWithPulse(_Renderer, local_combo, local_multiplier, false, true);
 
     // Player colors matching game rendering
     SDL_Color player_colors[MAX_MULTIPLAYER_PLAYERS] = {
@@ -1937,6 +2149,10 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
     {
         Renderer_DrawMainMenu(_Renderer, _MainMenuSelection);
     }
+    else if (_Game->state == GAME_MODE_SELECT)
+    {
+        Renderer_DrawModeSelect(_Renderer, _Game);
+    }
     else if (_Game->state == GAME_NAME_INPUT)
     {
         Renderer_DrawNameInput(_Renderer, _Game, _CurrentTime);
@@ -1959,6 +2175,18 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
         Renderer_DrawGrid(_Renderer, _Game->settings.gridAlpha);
         Renderer_DrawSnake(_Renderer, &_Game->snake);
         Renderer_DrawFood(_Renderer, &_Game->food);
+
+        // Draw all active power-ups (Power-Up mode only)
+        if (_Game->gameMode == MODE_POWERUP)
+        {
+            for (int i = 0; i < MAX_POWERUPS; i++)
+            {
+                if (_Game->powerUps[i].active)
+                {
+                    Renderer_DrawPowerUp(_Renderer, &_Game->powerUps[i]);
+                }
+            }
+        }
 
         // Draw explosion if active
         if (_Game->explosion.active)
@@ -2040,7 +2268,7 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
         }
 
         // Draw HUD border with score
-        Renderer_DrawHudBorderWithCombo(_Renderer, _Game->snake.score, _Game->comboCount, _Game->comboMultiplier);
+        Renderer_DrawHudBorderWithCombo(_Renderer, _Game->snake.score, _Game->comboCount, _Game->comboMultiplier, _Game->gameMode, _Game->settings.comboEffects);
     }
     else if (_Game->state == GAME_MULTIPLAYER && _MpCtx)
     {
