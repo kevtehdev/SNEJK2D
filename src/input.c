@@ -172,7 +172,8 @@ void Input_HandlePlayingInput(Game *_Game, SDL_Event *_Event)
             hasInput = true;
             break;
         case SDLK_ESCAPE:
-            _Game->state = GAME_MENU;
+            _Game->state = GAME_PAUSED;
+            _Game->pauseMenuSelection = 0;  // Default to "Resume Game"
             break;
         }
 
@@ -215,6 +216,42 @@ void Input_HandleGameOverInput(Game *_Game, SDL_Event *_Event)
             g_score_saved = false;
             _Game->state = GAME_MAIN_MENU;
             _Game->gameOverSelection = 0;
+            break;
+        }
+    }
+}
+
+void Input_HandlePauseMenuInput(Game *_Game, SDL_Event *_Event)
+{
+    if (_Event->type == SDL_KEYDOWN)
+    {
+        switch (_Event->key.keysym.sym)
+        {
+        case SDLK_UP:
+        case SDLK_w:
+            _Game->pauseMenuSelection = 0;  // Resume Game
+            break;
+        case SDLK_DOWN:
+        case SDLK_s:
+            _Game->pauseMenuSelection = 1;  // Exit to Main Menu
+            break;
+        case SDLK_RETURN:
+        case SDLK_SPACE:
+            if (_Game->pauseMenuSelection == 0)
+            {
+                // Resume game
+                _Game->state = GAME_PLAYING;
+            }
+            else
+            {
+                // Exit to main menu
+                _Game->state = GAME_MAIN_MENU;
+                _Game->pauseMenuSelection = 0;
+            }
+            break;
+        case SDLK_ESCAPE:
+            // ESC also resumes the game
+            _Game->state = GAME_PLAYING;
             break;
         }
     }
@@ -757,6 +794,10 @@ void Input_HandleInput(Game *_Game, SDL_Event *_Event, MultiplayerContext **_MpC
     else if (_Game->state == GAME_OVER)
     {
         Input_HandleGameOverInput(_Game, _Event);
+    }
+    else if (_Game->state == GAME_PAUSED)
+    {
+        Input_HandlePauseMenuInput(_Game, _Event);
     }
     else if (_Game->state == GAME_SCOREBOARD)
     {
