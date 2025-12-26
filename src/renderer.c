@@ -346,25 +346,70 @@ void Renderer_DrawBrightnessOverlay(Renderer *_Renderer, float _Brightness)
 static void drawHudWithPulse(Renderer *_Renderer, int _ComboCount, float _Multiplier)
 {
     const int borderThickness = HUD_BORDER_THICKNESS;
+    unsigned int time = SDL_GetTicks();
 
-    /* Calculate pulse intensity based on combo */
-    float pulse = 0.0f;
-    if (_ComboCount > 0)
+    int hudR = 20, hudG = 20, hudB = 20;
+    int alpha = 230;
+
+    /* Different effects based on combo tier */
+    if (_ComboCount == 0)
     {
-        unsigned int time = SDL_GetTicks();
-        float pulseSpeed = 3.0f + (_Multiplier * 0.5f);  /* Faster pulse with higher multiplier */
-        pulse = (sinf(time * pulseSpeed / 1000.0f) + 1.0f) * 0.5f;  /* 0.0 to 1.0 */
+        /* Tier 1: No effect - static dark border */
+        hudR = 20;
+        hudG = 20;
+        hudB = 20;
+        alpha = 230;
+    }
+    else if (_Multiplier < 2.0f)  /* Tier 2: 1.5x (3-4 combo) */
+    {
+        /* Slow pulse - white glow */
+        float pulse = (sinf(time * 2.0f / 1000.0f) + 1.0f) * 0.5f;  /* 0.0 to 1.0 */
+        int brightness = 20 + (int)(pulse * 50);
+        hudR = brightness;
+        hudG = brightness;
+        hudB = brightness;
+        alpha = 230 - (int)(pulse * 20);
+    }
+    else if (_Multiplier < 3.0f)  /* Tier 3: 2.0x (5-7 combo) */
+    {
+        /* Fast pulse - yellow tint */
+        float pulse = (sinf(time * 4.0f / 1000.0f) + 1.0f) * 0.5f;
+        hudR = 255;
+        hudG = 255 - (int)(pulse * 80);  /* White → yellow */
+        hudB = 100 - (int)(pulse * 80);
+        alpha = 230 - (int)(pulse * 30);
+    }
+    else if (_Multiplier < 5.0f)  /* Tier 4: 3.0x (8-11 combo) */
+    {
+        /* Double pulse - orange glow */
+        float pulse1 = (sinf(time * 5.0f / 1000.0f) + 1.0f) * 0.5f;
+        float pulse2 = (sinf(time * 10.0f / 1000.0f) + 1.0f) * 0.5f;
+        float combined = (pulse1 + pulse2) / 2.0f;
+        hudR = 255;
+        hudG = 150 - (int)(combined * 80);  /* Orange */
+        hudB = 50 - (int)(combined * 50);
+        alpha = 230 - (int)(combined * 40);
+    }
+    else  /* Tier 5: 5.0x (12+ combo) */
+    {
+        /* Rainbow flashing effect */
+        int colorPhase = (time / 150) % 6;  /* Change color every 150ms */
+        float pulse = (sinf(time * 6.0f / 1000.0f) + 1.0f) * 0.5f;
+
+        switch (colorPhase)
+        {
+            case 0: hudR = 255; hudG = (int)(pulse * 100); hudB = (int)(pulse * 100); break;  /* Red */
+            case 1: hudR = 255; hudG = 200; hudB = 0; break;  /* Yellow */
+            case 2: hudR = 0; hudG = 255; hudB = (int)(pulse * 100); break;  /* Green */
+            case 3: hudR = 0; hudG = 200; hudB = 255; break;  /* Cyan */
+            case 4: hudR = (int)(pulse * 150); hudG = 0; hudB = 255; break;  /* Blue */
+            case 5: hudR = 255; hudG = 0; hudB = 255; break;  /* Magenta */
+        }
+        alpha = 220 - (int)(pulse * 50);
     }
 
-    /* Base color with pulse effect */
-    int baseR = 20, baseG = 20, baseB = 20;
-    int pulseR = baseR + (int)(pulse * 40);
-    int pulseG = baseG + (int)(pulse * 40 * (_Multiplier - 1.0f) / 4.0f);  /* Slight green tint at high combo */
-    int pulseB = baseB + (int)(pulse * 60 * (_Multiplier - 1.0f) / 4.0f);  /* More blue at high combo */
-    int alpha = 230 - (int)(pulse * 30);  /* Slight transparency pulse */
-
     SDL_SetRenderDrawBlendMode(_Renderer->sdlRenderer, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(_Renderer->sdlRenderer, pulseR, pulseG, pulseB, alpha);
+    SDL_SetRenderDrawColor(_Renderer->sdlRenderer, hudR, hudG, hudB, alpha);
 
     /* Top border */
     SDL_Rect top = {0, 0, WINDOW_WIDTH, borderThickness};
