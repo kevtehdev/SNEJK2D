@@ -18,10 +18,6 @@ snejk2d
 *.swo
 *~
 
-# Old/unused asset folders
-assets/
-!assets_clean/
-
 # Build scripts (optional, keep if needed)
 build_windows.sh
 
@@ -30,6 +26,8 @@ settings.conf
 
 # Release artifacts (use GitHub Releases instead)
 release/
+*.tar.gz
+*.zip
 
 # Scoreboard data
 scoreboard.json
