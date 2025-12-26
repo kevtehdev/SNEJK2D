@@ -12,6 +12,7 @@ void Settings_Init(Settings *_Settings)
     _Settings->gameMusicEnabled = true;
     _Settings->gridAlpha = 2;
     _Settings->brightness = 1.0f;
+    _Settings->comboEffects = true;  // Combo effects ON by default
 }
 
 bool Settings_Load(Settings *_Settings)
@@ -48,6 +49,10 @@ bool Settings_Load(Settings *_Settings)
             {
                 _Settings->brightness = atof(value);
             }
+            else if (strcmp(key, "comboEffects") == 0)
+            {
+                _Settings->comboEffects = (strcmp(value, "true") == 0 || strcmp(value, "1") == 0);
+            }
         }
     }
 
@@ -67,6 +72,7 @@ bool Settings_Save(Settings *_Settings)
     fprintf(file, "gameMusicEnabled=%s\n", _Settings->gameMusicEnabled ? "true" : "false");
     fprintf(file, "gridAlpha=%d\n", _Settings->gridAlpha);
     fprintf(file, "brightness=%.2f\n", _Settings->brightness);
+    fprintf(file, "comboEffects=%s\n", _Settings->comboEffects ? "true" : "false");
 
     fclose(file);
     return true;

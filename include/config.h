@@ -40,6 +40,25 @@
 #define COMBO_TIER_4 8
 #define COMBO_TIER_5 12
 
+// Power-Up Spawn Rates (percentage) - Power-Up Mode only
+
+#define POWERUP_SCORE_MULT_RATE 5       // 5% - Uncommon
+#define POWERUP_SHIELD_RATE 10          // 10% - Common
+#define POWERUP_SPEED_BOOST_RATE 10     // 10% - Common
+#define POWERUP_GOLDEN_APPLE_RATE 15    // 15% - Very common
+
+// Power-Up Durations (milliseconds)
+
+#define POWERUP_SPEED_BOOST_DURATION 3000   // 3 seconds
+#define POWERUP_SCORE_MULT_DURATION 5000    // 5 seconds
+
+// Power-Up Mode spawn count
+#define POWERUP_MODE_COUNT 3  // Spawn 3 power-ups simultaneously
+
+// Power-Up Decay
+#define POWERUP_DECAY_TIME 12000     // 12 seconds before power-up disappears
+#define POWERUP_DECAY_WARNING 3000   // Start flashing 3 seconds before decay
+
 // Colors (RGB)
 
 #define COLOR_SNAKE_R 0
