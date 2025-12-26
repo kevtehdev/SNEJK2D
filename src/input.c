@@ -28,8 +28,8 @@ void Input_HandleMainMenuInput(Game *_Game, SDL_Event *_Event, MultiplayerContex
         case SDLK_SPACE:
             if (g_main_menu_selection == 0)
             {
-                // Singleplayer - go to name input first
-                _Game->state = GAME_NAME_INPUT;
+                // Singleplayer - go to mode selection first
+                _Game->state = GAME_MODE_SELECT;
             }
             else if (g_main_menu_selection == 1)
             {
@@ -66,7 +66,7 @@ void Input_HandleNameInput(Game *_Game, SDL_Event *_Event)
     {
         if (_Event->key.keysym.sym == SDLK_ESCAPE)
         {
-            _Game->state = GAME_MAIN_MENU;
+            _Game->state = GAME_MODE_SELECT;  // Go back to mode select
         }
         else if (_Event->key.keysym.sym == SDLK_RETURN && _Game->playerNameLen > 0)
         {
@@ -86,6 +86,35 @@ void Input_HandleNameInput(Game *_Game, SDL_Event *_Event)
                 _Game->playerName[_Game->playerNameLen++] = c;
                 _Game->playerName[_Game->playerNameLen] = '\0';
             }
+        }
+    }
+}
+
+void Input_HandleModeSelectInput(Game *_Game, SDL_Event *_Event)
+{
+    if (_Event->type == SDL_KEYDOWN)
+    {
+        switch (_Event->key.keysym.sym)
+        {
+        case SDLK_UP:
+        case SDLK_w:
+        case SDLK_LEFT:
+            _Game->modeSelection = 0;  // Classic
+            break;
+        case SDLK_DOWN:
+        case SDLK_s:
+        case SDLK_RIGHT:
+            _Game->modeSelection = 1;  // Power-Up
+            break;
+        case SDLK_RETURN:
+        case SDLK_SPACE:
+            // Set game mode and go to name input
+            _Game->gameMode = (_Game->modeSelection == 0) ? MODE_CLASSIC : MODE_POWERUP;
+            _Game->state = GAME_NAME_INPUT;
+            break;
+        case SDLK_ESCAPE:
+            _Game->state = GAME_MAIN_MENU;
+            break;
         }
     }
 }
@@ -210,11 +239,11 @@ void Input_HandleOptionsInput(Game *_Game, SDL_Event *_Event, void *_Audio)
         {
         case SDLK_UP:
         case SDLK_w:
-            _Game->optionsSelection = (_Game->optionsSelection - 1 + 5) % 5;
+            _Game->optionsSelection = (_Game->optionsSelection - 1 + 6) % 6;
             break;
         case SDLK_DOWN:
         case SDLK_s:
-            _Game->optionsSelection = (_Game->optionsSelection + 1) % 5;
+            _Game->optionsSelection = (_Game->optionsSelection + 1) % 6;
             break;
         case SDLK_LEFT:
         case SDLK_a:
@@ -276,10 +305,14 @@ void Input_HandleOptionsInput(Game *_Game, SDL_Event *_Event, void *_Audio)
                         _Game->settings.brightness = 2.0f;
                 }
             }
+            else if (_Game->optionsSelection == 4)  // Combo Effects
+            {
+                _Game->settings.comboEffects = !_Game->settings.comboEffects;
+            }
             break;
         case SDLK_RETURN:
         case SDLK_SPACE:
-            if (_Game->optionsSelection == 4)  // Reset to defaults
+            if (_Game->optionsSelection == 5)  // Reset to defaults
             {
                 Settings_Init(&_Game->settings);
                 Settings_Save(&_Game->settings);
@@ -704,6 +737,10 @@ void Input_HandleInput(Game *_Game, SDL_Event *_Event, MultiplayerContext **_MpC
     if (_Game->state == GAME_MAIN_MENU)
     {
         Input_HandleMainMenuInput(_Game, _Event, _MpCtx);
+    }
+    else if (_Game->state == GAME_MODE_SELECT)
+    {
+        Input_HandleModeSelectInput(_Game, _Event);
     }
     else if (_Game->state == GAME_NAME_INPUT)
     {
