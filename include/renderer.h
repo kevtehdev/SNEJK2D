@@ -70,7 +70,7 @@ void Renderer_DrawBrightnessOverlay(Renderer *_Renderer, float _Brightness);
 void Renderer_DrawHudBorderWithScore(Renderer *_Renderer, int _Score);
 
 /* Draw HUD border with combo */
-void Renderer_DrawHudBorderWithCombo(Renderer *_Renderer, int _Score, int _Combo, float _Multiplier);
+void Renderer_DrawHudBorderWithCombo(Renderer *_Renderer, int _Score, int _Combo, float _Multiplier, GameMode _GameMode, bool _ComboEffects);
 
 /* Draw walls around playfield */
 void Renderer_DrawWalls(Renderer *_Renderer);
@@ -86,6 +86,9 @@ void Renderer_DrawSnakeColored(Renderer *_Renderer, Snake *_Snake, int _R, int _
 
 /* Draw food */
 void Renderer_DrawFood(Renderer *_Renderer, Position *_Food);
+
+/* Draw power-up */
+void Renderer_DrawPowerUp(Renderer *_Renderer, PowerUp *_PowerUp);
 
 /* Draw HUD */
 void Renderer_DrawHud(Renderer *_Renderer, Game *_Game);

@@ -11,6 +11,7 @@ typedef struct {
     // Visual settings
     int gridAlpha;           // 0 = off, 1-10 = transparency level (default 2)
     float brightness;        // 0.5 to 2.0 (default 1.0)
+    bool comboEffects;       // true = HUD effects ON, false = static HUD (default true)
 } Settings;
 
 /* Initialize settings with defaults */
