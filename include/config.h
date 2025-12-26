@@ -27,7 +27,7 @@
 
 #define INITIAL_SNAKE_LENGTH 3
 #define BASE_SPEED 100     // ms per move
-#define MIN_SPEED 40       
+#define MIN_SPEED 80       // Increased from 60 to 80 for better control on small window
 #define SPEED_INCREASE 5
 
 // Combo System
