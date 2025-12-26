@@ -9,6 +9,7 @@
 
 typedef enum {
     GAME_MAIN_MENU,      // Singleplayer / Multiplayer choice
+    GAME_MODE_SELECT,    // Classic vs Power-Up mode selection
     GAME_NAME_INPUT,     // Name input before background selection
     GAME_MENU,           // Background selection (singleplayer)
     GAME_PLAYING,        // Singleplayer gameplay
@@ -19,6 +20,11 @@ typedef enum {
     GAME_MULTIPLAYER     // Multiplayer mode (separate state)
 } GameState;
 
+typedef enum {
+    MODE_CLASSIC,        // Original game without power-ups
+    MODE_POWERUP         // Power-up mode with multiple simultaneous power-ups
+} GameMode;
+
 // Explosion effect
 typedef struct {
     bool active;
@@ -27,11 +33,40 @@ typedef struct {
     unsigned int startTime;
 } Explosion;
 
+// Power-up types
+typedef enum {
+    POWERUP_NONE = 0,
+    POWERUP_GOLDEN_APPLE,
+    POWERUP_SPEED_BOOST,
+    POWERUP_SHIELD,
+    POWERUP_SCORE_MULTIPLIER
+} PowerUpType;
+
+// Power-up item
+typedef struct {
+    bool active;
+    PowerUpType type;
+    Position position;
+    unsigned int spawnTime;
+} PowerUp;
+
+// Active power-up effects
+typedef struct {
+    bool hasShield;
+    bool speedBoostActive;
+    bool scoreMultiplierActive;
+    unsigned int speedBoostEndTime;
+    unsigned int scoreMultiplierEndTime;
+    int normalSpeed;  // Store normal speed during speed effects
+} PowerUpStatus;
+
 typedef struct {
     Snake snake;
     Position food;
     GameState state;
-    int selectedBackground;      
+    GameMode gameMode;           // Classic or Power-Up mode
+    int modeSelection;           // 0 = Classic, 1 = Power-Up
+    int selectedBackground;
     unsigned int lastMoveTime;
     unsigned int currentSpeed;   // Current speed in ms
     bool running;
@@ -58,6 +93,11 @@ typedef struct {
     // Options menu
     int optionsSelection;        // 0-4: menu music, game music, grid alpha, brightness, reset
     Settings settings;
+
+    // Power-ups (multiple in Power-Up mode)
+    #define MAX_POWERUPS 5
+    PowerUp powerUps[MAX_POWERUPS];
+    PowerUpStatus powerUpStatus;
 } Game;
 
 /* Initialize game state and all subsystems */
