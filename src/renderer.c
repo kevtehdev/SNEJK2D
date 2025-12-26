@@ -1123,6 +1123,69 @@ void Renderer_DrawMainMenu(Renderer *_Renderer, int _Selection)
     }
 }
 
+void Renderer_DrawPauseMenu(Renderer *_Renderer, int _Selection)
+{
+    SDL_Color white = {255, 255, 255, 255};
+    SDL_Color green = {0, 255, 0, 255};
+    SDL_Color gray = {150, 150, 150, 255};
+
+    // Draw semi-transparent overlay
+    SDL_SetRenderDrawBlendMode(_Renderer->sdlRenderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 0, 0, 0, 180);  // Dark overlay with transparency
+    SDL_Rect overlay = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
+    SDL_RenderFillRect(_Renderer->sdlRenderer, &overlay);
+
+    // Title "PAUSED"
+    SDL_Surface *title_surface = TTF_RenderText_Solid(_Renderer->fontLarge, "PAUSED", white);
+    if (title_surface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, title_surface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - title_surface->w/2, 150, title_surface->w, title_surface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(title_surface);
+    }
+
+    // Menu spacing
+    int startY = 250;
+    int spacing = 50;
+
+    // Resume Game option
+    const char *resume_text = _Selection == 0 ? "> RESUME GAME " : "  RESUME GAME  ";
+    SDL_Color resume_color = _Selection == 0 ? green : gray;
+    SDL_Surface *resume_surface = TTF_RenderText_Solid(_Renderer->fontMedium, resume_text, resume_color);
+    if (resume_surface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, resume_surface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - resume_surface->w/2, startY, resume_surface->w, resume_surface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(resume_surface);
+    }
+
+    // Exit to Main Menu option
+    const char *exit_text = _Selection == 1 ? "> EXIT TO MAIN MENU " : "  EXIT TO MAIN MENU  ";
+    SDL_Color exit_color = _Selection == 1 ? green : gray;
+    SDL_Surface *exit_surface = TTF_RenderText_Solid(_Renderer->fontMedium, exit_text, exit_color);
+    if (exit_surface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, exit_surface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - exit_surface->w/2, startY + spacing, exit_surface->w, exit_surface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(exit_surface);
+    }
+}
+
 void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
 {
     SDL_Color white = {255, 255, 255, 255};
@@ -2169,7 +2232,7 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
     {
         Renderer_DrawOptions(_Renderer, _Game);
     }
-    else if (_Game->state == GAME_PLAYING || _Game->state == GAME_OVER)
+    else if (_Game->state == GAME_PLAYING || _Game->state == GAME_OVER || _Game->state == GAME_PAUSED)
     {
         // Singleplayer _Game
         Renderer_DrawGrid(_Renderer, _Game->settings.gridAlpha);
@@ -2267,8 +2330,17 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
             }
         }
 
-        // Draw HUD border with score
-        Renderer_DrawHudBorderWithCombo(_Renderer, _Game->snake.score, _Game->comboCount, _Game->comboMultiplier, _Game->gameMode, _Game->settings.comboEffects);
+        // Pause menu overlay
+        if (_Game->state == GAME_PAUSED)
+        {
+            Renderer_DrawPauseMenu(_Renderer, _Game->pauseMenuSelection);
+        }
+
+        // Draw HUD border with score (not in pause state)
+        if (_Game->state != GAME_PAUSED)
+        {
+            Renderer_DrawHudBorderWithCombo(_Renderer, _Game->snake.score, _Game->comboCount, _Game->comboMultiplier, _Game->gameMode, _Game->settings.comboEffects);
+        }
     }
     else if (_Game->state == GAME_MULTIPLAYER && _MpCtx)
     {
