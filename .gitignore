@@ -1,12 +1,15 @@
 # Build artifacts
 build/
 build-win/
+build_win/
 *.o
 *.a
 *.exe
+*.dll
 snejk2d
 .md/
 .scoreboard.json
+release_tmp/
 
 # IDE
 .vscode/
@@ -21,9 +24,6 @@ snejk2d
 # Old/unused asset folders
 assets/
 !assets_clean/
-
-# Build scripts (optional, keep if needed)
-build_windows.sh
 
 # Runtime files
 settings.conf
