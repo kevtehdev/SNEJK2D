@@ -632,6 +632,14 @@ void Multiplayer_HostUpdate(MultiplayerContext *_Ctx, unsigned int _CurrentTime)
     if (_Ctx->state != MP_STATE_PLAYING)
         return;
 
+    // High-frequency state broadcast (every 16ms for minimal input lag)
+    static unsigned int lastBroadcast = 0;
+    if (_CurrentTime - lastBroadcast >= 16)
+    {
+        Multiplayer_HostBroadcastState(_Ctx);
+        lastBroadcast = _CurrentTime;
+    }
+
     // Check if it's time to move
     if (_CurrentTime - _Ctx->lastMoveTime >= _Ctx->currentSpeed)
     {
@@ -813,9 +821,6 @@ void Multiplayer_HostUpdate(MultiplayerContext *_Ctx, unsigned int _CurrentTime)
             }
         }
 
-        // Broadcast state
-        Multiplayer_HostBroadcastState(_Ctx);
-
         // Check game over
         int aliveCount = 0;
         for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
@@ -827,6 +832,8 @@ void Multiplayer_HostUpdate(MultiplayerContext *_Ctx, unsigned int _CurrentTime)
         if (aliveCount <= 1)
         {
             _Ctx->state = MP_STATE_GAME_OVER;
+            // Broadcast game over state immediately to all clients
+            Multiplayer_HostBroadcastState(_Ctx);
         }
     }
 }
