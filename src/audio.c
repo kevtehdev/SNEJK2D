@@ -9,6 +9,17 @@ bool Audio_Init(AudioSystem *_Audio)
 {
     printf("Initializing audio system...\n");
 
+    // Allow disabling audio for multiple instances (prevents conflicts)
+    const char *disableAudio = getenv("SNEJK2D_NO_AUDIO");
+    if (disableAudio != NULL)
+    {
+        printf("  ⚠ Audio disabled via SNEJK2D_NO_AUDIO (running multiple instances)\n");
+        _Audio->initialized = false;
+        _Audio->musicEnabled = false;
+        _Audio->sfxEnabled = false;
+        return false;
+    }
+
     // Use 44100 Hz to match most audio files (avoid heavy resampling)
     int bufferSize = 2048;;
     int sampleRate = 44100;
@@ -18,6 +29,7 @@ bool Audio_Init(AudioSystem *_Audio)
     {
         fprintf(stderr, "Warning: Failed to initialize SDL_mixer: %s\n", Mix_GetError());
         fprintf(stderr, "Continuing without audio...\n");
+        fprintf(stderr, "Hint: Set SNEJK2D_NO_AUDIO=1 when running multiple instances\n");
         _Audio->initialized = false;
         return false;
     }
