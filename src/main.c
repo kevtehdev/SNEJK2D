@@ -84,6 +84,18 @@ int main(int argc, char *argv[])
             {
                 Multiplayer_HostUpdate(mpCtx, currentTime);
             }
+            else if (mpCtx->state == MP_STATE_TURN_PLAYING)
+            {
+                // Update local game during turn battle
+                Game_Update(&mpCtx->localGame);
+
+                // Check if player died
+                if (mpCtx->localGame.state == GAME_OVER)
+                {
+                    // Finish this attempt
+                    Multiplayer_FinishTurnAttempt(mpCtx);
+                }
+            }
             Multiplayer_UpdateCountdown(mpCtx, currentTime);
         }
 
