@@ -24,6 +24,9 @@ void Game_Init(Game *_Game)
     // Initialize game over menu
     _Game->gameOverSelection = 0;  // Default to "Try Again"
 
+    // Initialize pause menu
+    _Game->pauseMenuSelection = 0;  // Default to "Resume Game"
+
     // Initialize explosion
     _Game->explosion.active = false;
     _Game->explosion.frame = 0;
