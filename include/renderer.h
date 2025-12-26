@@ -102,6 +102,9 @@ void Renderer_DrawNameInput(Renderer *_Renderer, Game *_Game, unsigned int _Tick
 /* Draw main menu */
 void Renderer_DrawMainMenu(Renderer *_Renderer, int _Selection);
 
+/* Draw pause menu */
+void Renderer_DrawPauseMenu(Renderer *_Renderer, int _Selection);
+
 /* Draw options menu */
 void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game);
 
