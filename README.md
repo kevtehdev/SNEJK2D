@@ -1,47 +1,56 @@
 # SNEJK2D
 
-Snake game med singleplayer och multiplayer (1v1).
+Snake game with singleplayer and multiplayer.
 
-## Spela
+## Play
 
-Starta spelet:
-```
+```bash
 ./snejk2d
 ```
 
-Eller på Windows:
-```
+Windows:
+```bash
 snejk2d.exe
 ```
 
-## Kontroller
+## Controls
 
-**Menyer:**
-- Piltangenter: navigera
-- Enter: välj
-- ESC: tillbaka
+**Menus:**
+- Arrow keys / WASD: navigate
+- Enter: select
+- ESC: back
 
-**Spel:**
-- Piltangenter: styr ormen
+**Game:**
+- Arrow keys / WASD: move
+
+## Game Modes
+
+**Classic:** Traditional snake gameplay
+
+**Power-Up:** Enhanced mode with collectible power-ups
+- Golden Apple (yellow): +3 length
+- Speed Boost (cyan): temporary speed increase
+- Shield (blue): one-hit protection
+- Score Multiplier (magenta): 10x points for 5 seconds
 
 ## Multiplayer
 
-Två spelare kan spela mot varandra online. En skapar lobby (HOST GAME), den andra går med (JOIN GAME).
+Two players compete online. One creates lobby (HOST GAME), the other joins (JOIN GAME).
 
-Varje spelare försöker äta mat och växa. Första som dör förlorar.
+First player to die loses.
 
-## Bygga från källkod
+## Building
 
-Kräver SDL2, SDL2_image, SDL2_ttf, SDL2_mixer, jansson och uuid.
+Requires SDL2, SDL2_image, SDL2_ttf, SDL2_mixer, jansson and uuid.
 
-På Ubuntu/WSL2:
+Ubuntu/WSL2:
 ```bash
 make deps
 make
 ```
 
-På Windows behövs MinGW och alla SDL2-bibliotek.
+Windows requires MinGW and SDL2 libraries.
 
 ## License
 
-Se LICENSE fil för info.
+See LICENSE file.
