@@ -79,6 +79,9 @@ typedef struct {
     // Game Over menu
     int gameOverSelection;       // 0 = Try Again, 1 = Main Menu
 
+    // Pause menu
+    int pauseMenuSelection;      // 0 = Resume Game, 1 = Exit to Main Menu
+
     // Explosion effect
     Explosion explosion;
     bool scoreSaved;             // Track if score was saved to prevent duplicates
