@@ -314,6 +314,88 @@ static void mpapiEventCallback(const char *event, int64_t messageId, const char 
             ctx->state = MP_STATE_DISCONNECTED;
             strncpy(ctx->errorMessage, "Host disconnected", sizeof(ctx->errorMessage) - 1);
         }
+        else if (strcmp(msgType, "player_left") == 0)
+        {
+            // A player has left the game (from server)
+            const char *leftClientId = json_string_value(json_object_get(data, "clientId"));
+
+            if (leftClientId)
+            {
+                // Find and remove the player
+                for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
+                {
+                    if (ctx->players[i].joined && strcmp(ctx->players[i].clientId, leftClientId) == 0)
+                    {
+                        printf("✓ Player left: %s\n", ctx->players[i].name);
+                        ctx->players[i].joined = false;
+                        ctx->players[i].ready = false;
+                        ctx->players[i].turnFinished = false;
+
+                        // If we're in turn battle and waiting for results, check if we can show results now
+                        if (ctx->gameMode == MP_MODE_TURN_BATTLE)
+                        {
+                            if (ctx->state == MP_STATE_TURN_WAITING && ctx->isHost)
+                            {
+                                // Check if all remaining players are finished
+                                if (Multiplayer_AllTurnsFinished(ctx))
+                                {
+                                    Multiplayer_CalculateTurnWinner(ctx);
+                                    ctx->resultPageIndex = 0;
+                                    ctx->state = MP_STATE_TURN_RESULTS;
+
+                                    // Broadcast results to remaining players
+                                    json_t *resultsMsg = json_object();
+                                    json_object_set_new(resultsMsg, "type", json_string("show_results"));
+                                    mpapi_game(ctx->api, resultsMsg, NULL);
+                                    json_decref(resultsMsg);
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        else if (strcmp(msgType, "player_leaving") == 0)
+        {
+            // A player is voluntarily leaving (broadcast from player)
+            if (clientId)
+            {
+                // Find and remove the player
+                for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
+                {
+                    if (ctx->players[i].joined && strcmp(ctx->players[i].clientId, clientId) == 0)
+                    {
+                        printf("✓ Player %s is leaving the game\n", ctx->players[i].name);
+                        ctx->players[i].joined = false;
+                        ctx->players[i].ready = false;
+                        ctx->players[i].turnFinished = false;
+
+                        // If we're in turn battle and waiting for results, check if we can show results now
+                        if (ctx->gameMode == MP_MODE_TURN_BATTLE)
+                        {
+                            if (ctx->state == MP_STATE_TURN_WAITING && ctx->isHost)
+                            {
+                                // Check if all remaining players are finished
+                                if (Multiplayer_AllTurnsFinished(ctx))
+                                {
+                                    Multiplayer_CalculateTurnWinner(ctx);
+                                    ctx->resultPageIndex = 0;
+                                    ctx->state = MP_STATE_TURN_RESULTS;
+
+                                    // Broadcast results to remaining players
+                                    json_t *resultsMsg = json_object();
+                                    json_object_set_new(resultsMsg, "type", json_string("show_results"));
+                                    mpapi_game(ctx->api, resultsMsg, NULL);
+                                    json_decref(resultsMsg);
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
         else if (strcmp(msgType, "nick_change") == 0)
         {
             // Nickname change from another player
@@ -368,6 +450,7 @@ static void mpapiEventCallback(const char *event, int64_t messageId, const char 
                 if (ctx->isHost && Multiplayer_AllTurnsFinished(ctx))
                 {
                     Multiplayer_CalculateTurnWinner(ctx);
+                    ctx->resultPageIndex = 0;  // Start at winner
                     ctx->state = MP_STATE_TURN_RESULTS;
 
                     // Broadcast results state to all players
@@ -381,8 +464,46 @@ static void mpapiEventCallback(const char *event, int64_t messageId, const char 
         else if (strcmp(msgType, "show_results") == 0)
         {
             // Host is telling us to show results
+            ctx->resultPageIndex = 0;  // Start at winner
             ctx->state = MP_STATE_TURN_RESULTS;
             Multiplayer_CalculateTurnWinner(ctx);
+        }
+        else if (strcmp(msgType, "start_turn_attempt") == 0)
+        {
+            // Host is starting a turn attempt for all players
+            int attempt = json_integer_value(json_object_get(data, "attempt"));
+            ctx->currentAttempt = attempt;
+            Multiplayer_StartTurnAttempt(ctx);
+            printf("✓ Starting turn attempt %d/3\n", attempt + 1);
+        }
+        else if (strcmp(msgType, "return_to_lobby") == 0)
+        {
+            // Host is returning everyone to lobby after turn battle results
+            ctx->state = MP_STATE_LOBBY;
+
+            // Reset turn battle data
+            for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
+            {
+                ctx->players[i].ready = false;
+                ctx->players[i].turnFinished = false;
+                ctx->players[i].completedAttempts = 0;
+                ctx->players[i].bestScore = 0;
+            }
+            ctx->currentAttempt = 0;
+            ctx->resultPageIndex = 0;
+            printf("✓ Returned to lobby\n");
+        }
+        else if (strcmp(msgType, "cancel_ready_up") == 0)
+        {
+            // Host cancelled ready-up, return to lobby
+            ctx->state = MP_STATE_LOBBY;
+
+            // Reset ready states
+            for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
+            {
+                ctx->players[i].ready = false;
+            }
+            printf("✓ Ready-up cancelled, returned to lobby\n");
         }
     }
 }
@@ -444,6 +565,7 @@ MultiplayerContext* Multiplayer_Create(void)
     ctx->modeSelection = 0;
     ctx->currentAttempt = 0;
     ctx->attemptStartTime = 0;
+    ctx->resultPageIndex = 0;
 
     return ctx;
 }
@@ -1597,6 +1719,20 @@ void Multiplayer_FinishTurnAttempt(MultiplayerContext *_Ctx)
         // Submit results to host
         Multiplayer_SubmitTurnResults(_Ctx);
         _Ctx->state = MP_STATE_TURN_WAITING;
+
+        // If we're host and all players are now finished, show results immediately
+        if (_Ctx->isHost && Multiplayer_AllTurnsFinished(_Ctx))
+        {
+            Multiplayer_CalculateTurnWinner(_Ctx);
+            _Ctx->resultPageIndex = 0;  // Start at winner
+            _Ctx->state = MP_STATE_TURN_RESULTS;
+
+            // Broadcast results state to all players
+            json_t *resultsMsg = json_object();
+            json_object_set_new(resultsMsg, "type", json_string("show_results"));
+            mpapi_game(_Ctx->api, resultsMsg, NULL);
+            json_decref(resultsMsg);
+        }
     }
     else
     {
