@@ -1323,7 +1323,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, inst_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - inst_surface->w/2, WINDOW_HEIGHT - 60, inst_surface->w, inst_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH/2 - inst_surface->w/2, WINDOW_HEIGHT - 40, inst_surface->w, inst_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
