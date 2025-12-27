@@ -1353,7 +1353,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
     // Menu Music
     SDL_Color menuMusic_color = _Game->optionsSelection == 0 ? green : gray;
     char menuMusic_text[64];
-    snprintf(menuMusic_text, sizeof(menuMusic_text), "%s Menu Music: [%s]",
+    snprintf(menuMusic_text, sizeof(menuMusic_text), "%s MENU MUSIC: [%s]",
              _Game->optionsSelection == 0 ? ">" : " ", _Game->settings.menuMusicEnabled ? "ON" : "OFF");
     SDL_Surface *menuMusic_surface = TTF_RenderText_Solid(_Renderer->fontMedium, menuMusic_text, menuMusic_color);
     if (menuMusic_surface)
@@ -1371,7 +1371,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
     // Game Music
     SDL_Color gameMusic_color = _Game->optionsSelection == 1 ? green : gray;
     char gameMusic_text[64];
-    snprintf(gameMusic_text, sizeof(gameMusic_text), "%s Game Music: [%s]",
+    snprintf(gameMusic_text, sizeof(gameMusic_text), "%s GAME MUSIC: [%s]",
              _Game->optionsSelection == 1 ? ">" : " ", _Game->settings.gameMusicEnabled ? "ON" : "OFF");
     SDL_Surface *gameMusic_surface = TTF_RenderText_Solid(_Renderer->fontMedium, gameMusic_text, gameMusic_color);
     if (gameMusic_surface)
@@ -1391,9 +1391,9 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
     char grid_text[64];
     const char *grid_label = _Game->settings.gridAlpha == 0 ? "OFF" : "";
     if (_Game->settings.gridAlpha == 0)
-        snprintf(grid_text, sizeof(grid_text), "%s Grid: [%s]", _Game->optionsSelection == 2 ? ">" : " ", grid_label);
+        snprintf(grid_text, sizeof(grid_text), "%s GRID: [%s]", _Game->optionsSelection == 2 ? ">" : " ", grid_label);
     else
-        snprintf(grid_text, sizeof(grid_text), "%s Grid: [%d]", _Game->optionsSelection == 2 ? ">" : " ", _Game->settings.gridAlpha);
+        snprintf(grid_text, sizeof(grid_text), "%s GRID: [%d]", _Game->optionsSelection == 2 ? ">" : " ", _Game->settings.gridAlpha);
     SDL_Surface *grid_surface = TTF_RenderText_Solid(_Renderer->fontMedium, grid_text, grid_color);
     if (grid_surface)
     {
@@ -1410,7 +1410,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
     // Brightness
     SDL_Color bright_color = _Game->optionsSelection == 3 ? green : gray;
     char bright_text[64];
-    snprintf(bright_text, sizeof(bright_text), "%s Brightness: [%.0f%%]",
+    snprintf(bright_text, sizeof(bright_text), "%s BRIGHTNESS: [%.0f%%]",
              _Game->optionsSelection == 3 ? ">" : " ", _Game->settings.brightness * 100);
     SDL_Surface *bright_surface = TTF_RenderText_Solid(_Renderer->fontMedium, bright_text, bright_color);
     if (bright_surface)
@@ -1428,7 +1428,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
     // Combo Effects
     SDL_Color combo_color = _Game->optionsSelection == 4 ? green : gray;
     char combo_text[64];
-    snprintf(combo_text, sizeof(combo_text), "%s Combo HUD Effects: [%s]",
+    snprintf(combo_text, sizeof(combo_text), "%s COMBO HUD EFFECTS: [%s]",
              _Game->optionsSelection == 4 ? ">" : " ", _Game->settings.comboEffects ? "ON" : "OFF");
     SDL_Surface *combo_surface = TTF_RenderText_Solid(_Renderer->fontMedium, combo_text, combo_color);
     if (combo_surface)
