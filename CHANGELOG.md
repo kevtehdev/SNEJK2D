@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.3.0] - 2025-12-27
+
+### Changed
+- Turn Battle is now the default multiplayer mode
+- Realtime mode renamed to 1VS1
+- Countdown reduced from 5 to 3 seconds
+- Results screen improvements - best score moved next to player name, navigation text in white at bottom
+
+### Added
+- Chat notification sound when messages arrive
+- Lightning effect during countdown with random flashes and pulsing
+
+### Fixed
+- Audio crackling by increasing buffer size and lowering sound effect volume
+- Results screen text overlap
+
 ## [1.2.0] - 2025-12-26
 
 ### Added
