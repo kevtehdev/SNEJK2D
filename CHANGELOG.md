@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.3.1] - 2025-12-27
+
+### Turn Battle
+- Attempt counter moved to HUD area during countdown
+- New countdown animation - zooms from large to normal with dark pulsing overlay
+- Background overlay added for consistency with singleplayer
+- Grid opacity reduced to 2 for cleaner look
+
+### Power-Up Mode
+- Reduced simultaneous power-ups from 5 to 3
+- Added level system with XP progression
+  - Gain 10 XP per food eaten
+  - Level up at 100, 150, 200, 250 XP etc.
+- Level display in top HUD next to score
+- XP progress bar in bottom HUD with cyan styling
+- Level-up celebration effect with screen flash and zoom text
+
+### UI
+- Borderless window mode
+- OPTIONS menu text capitalized for consistency
+- Better visual feedback throughout
+
 ## [1.3.0] - 2025-12-27
 
 ### Changed
@@ -11,10 +33,13 @@
 ### Added
 - Chat notification sound when messages arrive
 - Lightning effect during countdown with random flashes and pulsing
+- Retro loading screen with rotating messages
 
 ### Fixed
 - Audio crackling by increasing buffer size and lowering sound effect volume
 - Results screen text overlap
+- Buffer overflow in scoreboard
+- Chat and nick input trigger key appearing in text
 
 ## [1.2.0] - 2025-12-26
 
