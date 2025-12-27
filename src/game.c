@@ -54,6 +54,13 @@ void Game_Init(Game *_Game)
     _Game->powerUpStatus.scoreMultiplierActive = false;
     _Game->powerUpStatus.normalSpeed = BASE_SPEED;
 
+    // Initialize level system
+    _Game->level = 1;
+    _Game->xp = 0;
+    _Game->xpToNextLevel = 100;  // 100 XP for level 2
+    _Game->levelUpActive = false;
+    _Game->levelUpStartTime = 0;
+
     Snake_Init(&_Game->snake);
     Game_SpawnFood(_Game);
 }
@@ -361,6 +368,22 @@ void Game_Update(Game *_Game)
 
             Game_SpawnFood(_Game);
 
+            // Add XP in Power-Up mode
+            if (_Game->gameMode == MODE_POWERUP)
+            {
+                _Game->xp += 10; // 10 XP per food eaten
+
+                // Check for level up
+                while (_Game->xp >= _Game->xpToNextLevel)
+                {
+                    _Game->level++;
+                    _Game->xp -= _Game->xpToNextLevel;
+                    _Game->xpToNextLevel = 100 + (_Game->level - 1) * 50; // 100, 150, 200, 250, etc.
+                    _Game->levelUpActive = true;
+                    _Game->levelUpStartTime = currentTime;
+                }
+            }
+
             // Increase speed (with cap at MIN_SPEED) - only if no speed boost active
             if (!_Game->powerUpStatus.speedBoostActive)
             {
@@ -490,6 +513,13 @@ void Game_Reset(Game *_Game)
     _Game->powerUpStatus.speedBoostActive = false;
     _Game->powerUpStatus.scoreMultiplierActive = false;
     _Game->powerUpStatus.normalSpeed = BASE_SPEED;
+
+    // Reset level system
+    _Game->level = 1;
+    _Game->xp = 0;
+    _Game->xpToNextLevel = 100;
+    _Game->levelUpActive = false;
+    _Game->levelUpStartTime = 0;
 
     Snake_Init(&_Game->snake);
     Game_SpawnFood(_Game);

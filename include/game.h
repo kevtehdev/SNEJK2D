@@ -98,9 +98,16 @@ typedef struct {
     Settings settings;
 
     // Power-ups (multiple in Power-Up mode)
-    #define MAX_POWERUPS 5
+    #define MAX_POWERUPS 3  // Reduced from 5 to 3 for better gameplay
     PowerUp powerUps[MAX_POWERUPS];
     PowerUpStatus powerUpStatus;
+
+    // Level system for Power-Up mode
+    int level;                   // Current level (starts at 1)
+    int xp;                      // Current XP
+    int xpToNextLevel;          // XP needed for next level
+    bool levelUpActive;         // True when level-up effect is playing
+    unsigned int levelUpStartTime; // When level-up effect started
 } Game;
 
 /* Initialize game state and all subsystems */
