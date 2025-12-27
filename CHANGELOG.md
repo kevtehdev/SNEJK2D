@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.3.3] - 2025-12-27
+
+### Power-Ups
+- Removed Shield power-up for clearer gameplay
+- Speed Boost now cyan instead of yellow for better visibility
+- Three distinct power-ups: Golden Apple (yellow), Speed Boost (cyan), Score Multiplier (magenta)
+
+### Turn Battle Mode Selection
+- Choose between Classic and Power-Up modes in Turn Battle
+- Host uses arrow keys in lobby to switch between modes
+- Selected mode shown in lobby and ready screen
+- Mode syncs automatically to all players
+
+### UI
+- Cleaner lobby footer - removed redundant instruction text
+- Mode displayed clearly in cyan
+
 ## [1.3.2] - 2025-12-27
 
 ### Turn Battle Mode Selection
