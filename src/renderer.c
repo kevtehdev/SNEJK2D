@@ -930,7 +930,7 @@ void Renderer_DrawNameInput(Renderer *_Renderer, Game *_Game, unsigned int _Tick
     }
 
     /* Blinking "TYPE YOUR NAME" prompt */
-    SDL_Surface *promptSurface = TTF_RenderText_Solid(_Renderer->fontMedium, "TYPE YOUR NAME", promptColors[blinkPhase]);
+    SDL_Surface *promptSurface = TTF_RenderText_Solid(_Renderer->fontSmall, "TYPE YOUR NAME", promptColors[blinkPhase]);
     if (promptSurface)
     {
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, promptSurface);
@@ -1358,7 +1358,7 @@ void Renderer_DrawMultiplayerMenu(Renderer *_Renderer, MultiplayerContext *_MpCt
 
     // Menu options - centered like main menu
     const char *options[] = {"HOST GAME", "JOIN GAME"};
-    int y_start = 250;  // Same as main menu
+    int y_start = 220;  // Moved up for better centering
 
     for (int i = 0; i < 2; i++)
     {
@@ -1418,7 +1418,7 @@ void Renderer_DrawMultiplayerRoomName(Renderer *_Renderer, MultiplayerContext *_
 
     SDL_Color white = {255, 255, 255, 255};
     SDL_Color green = {100, 200, 100, 255};
-    int y = 100;
+    int y = 70;  // Moved up for better centering
 
     // Title
     SDL_Surface *title_surface = TTF_RenderText_Solid(_Renderer->fontLarge, "SNEJK2D", white);
@@ -1437,7 +1437,7 @@ void Renderer_DrawMultiplayerRoomName(Renderer *_Renderer, MultiplayerContext *_
     y += 70;
 
     // Blinking "TYPE GAME NAME" prompt
-    SDL_Surface *promptSurface = TTF_RenderText_Solid(_Renderer->fontMedium, "TYPE GAME NAME", promptColors[blinkPhase]);
+    SDL_Surface *promptSurface = TTF_RenderText_Solid(_Renderer->fontSmall, "TYPE GAME NAME", promptColors[blinkPhase]);
     if (promptSurface)
     {
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, promptSurface);
