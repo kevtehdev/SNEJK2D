@@ -47,7 +47,7 @@ typedef enum {
 // Browseable game info
 typedef struct {
     char sessionId[8];
-    char name[64];
+    char name[16];
     int playerCount;
     int maxPlayers;
     int mapId;  // Background/map index
