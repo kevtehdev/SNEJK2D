@@ -25,7 +25,7 @@ bool Renderer_Init(Renderer *_Renderer)
         SDL_WINDOWPOS_CENTERED,
         WINDOW_WIDTH,
         WINDOW_HEIGHT,
-        SDL_WINDOW_SHOWN);
+        SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS);
 
     if (!_Renderer->window)
     {
