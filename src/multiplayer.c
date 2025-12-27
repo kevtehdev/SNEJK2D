@@ -561,11 +561,13 @@ MultiplayerContext *Multiplayer_Create(void)
     // Initialize chat
     ctx->chatCount = 0;
     ctx->chatInputLen = 0;
+    ctx->skipNextChatChar = false;
     memset(ctx->chatInput, 0, sizeof(ctx->chatInput));
     ctx->previousState = MP_STATE_LOBBY;
 
     // Initialize nick change
     ctx->nickInputLen = 0;
+    ctx->skipNextNickChar = false;
     memset(ctx->nickInput, 0, sizeof(ctx->nickInput));
 
     // Initialize turn battle
