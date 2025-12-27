@@ -1,4 +1,5 @@
 #include "../include/renderer.h"
+#include "../include/audio.h"
 #include <SDL2/SDL_image.h>
 #include <stdio.h>
 #include <math.h>
@@ -1487,7 +1488,7 @@ void Renderer_DrawMultiplayerRoomName(Renderer *_Renderer, MultiplayerContext *_
     y += 30;
 
     // Game mode display
-    const char *mode_names[] = {"REALTIME", "TURN BATTLE"};
+    const char *mode_names[] = {"TURN BATTLE", "1VS1"};
     char mode_display[64];
     snprintf(mode_display, sizeof(mode_display), "< %s >", mode_names[_MpCtx->modeSelection]);
 
@@ -1542,7 +1543,7 @@ void Renderer_DrawMultiplayerRoomName(Renderer *_Renderer, MultiplayerContext *_
 
     // Instructions (shortened to fit screen)
     SDL_Surface *inst_surface = TTF_RenderText_Solid(_Renderer->fontSmall,
-        "ARROWS NAVIGATE   ENTER CREATE   ESC CANCEL", white);
+        "MODE UP DOWN  MAP LEFT RIGHT  ENTER CREATE", white);
     if (inst_surface)
     {
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, inst_surface);
@@ -1712,7 +1713,7 @@ void Renderer_DrawMultiplayerLobby(Renderer *_Renderer, MultiplayerContext *_MpC
     }
 
     // Game Mode display (for both host and client)
-    const char *mode_names[] = {"REALTIME", "TURN BATTLE"};
+    const char *mode_names[] = {"TURN BATTLE", "1VS1"};
     char mode_text[64];
     snprintf(mode_text, sizeof(mode_text), "MODE: %s", mode_names[_MpCtx->gameMode]);
     SDL_Surface *mode_surface = TTF_RenderText_Solid(_Renderer->fontSmall, mode_text, white);
@@ -2116,7 +2117,7 @@ void Renderer_DrawModeSelection(Renderer *_Renderer, MultiplayerContext *_MpCtx)
     }
 
     // Mode options
-    const char *modes[] = {"REALTIME", "TURN BATTLE"};
+    const char *modes[] = {"TURN BATTLE", "1VS1"};
     int yPos = 300;
 
     for (int i = 0; i < 2; i++)
@@ -2561,6 +2562,28 @@ void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx)
         SDL_FreeSurface(nameSurface);
     }
 
+    // Best score (right under player name)
+    char bestText[128];
+    snprintf(bestText, sizeof(bestText), "BEST SCORE: %d", _MpCtx->players[displayIdx].bestScore);
+
+    SDL_Surface *bestSurface = TTF_RenderText_Solid(_Renderer->fontMedium, bestText, green);
+    if (bestSurface)
+    {
+        SDL_Texture *bestTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, bestSurface);
+        if (bestTexture)
+        {
+            SDL_Rect bestRect = {
+                WINDOW_WIDTH / 2 - bestSurface->w / 2,
+                330,
+                bestSurface->w,
+                bestSurface->h
+            };
+            SDL_RenderCopy(_Renderer->sdlRenderer, bestTexture, NULL, &bestRect);
+            SDL_DestroyTexture(bestTexture);
+        }
+        SDL_FreeSurface(bestSurface);
+    }
+
     // Show all 3 attempts
     int yPos = 350;
     for (int attempt = 0; attempt < 3; attempt++)
@@ -2592,28 +2615,6 @@ void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx)
         }
 
         yPos += 30;
-    }
-
-    // Best score
-    char bestText[128];
-    snprintf(bestText, sizeof(bestText), "BEST SCORE: %d", _MpCtx->players[displayIdx].bestScore);
-
-    SDL_Surface *bestSurface = TTF_RenderText_Solid(_Renderer->fontMedium, bestText, green);
-    if (bestSurface)
-    {
-        SDL_Texture *bestTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, bestSurface);
-        if (bestTexture)
-        {
-            SDL_Rect bestRect = {
-                WINDOW_WIDTH / 2 - bestSurface->w / 2,
-                yPos + 10,
-                bestSurface->w,
-                bestSurface->h
-            };
-            SDL_RenderCopy(_Renderer->sdlRenderer, bestTexture, NULL, &bestRect);
-            SDL_DestroyTexture(bestTexture);
-        }
-        SDL_FreeSurface(bestSurface);
     }
 
     // Navigation arrows (if multiple players)
@@ -2679,7 +2680,7 @@ void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx)
 
     // Instructions
     SDL_Surface *instrSurface = TTF_RenderText_Solid(_Renderer->fontSmall,
-        "Left/Right: Navigate  |  Enter: Lobby  |  ESC: Menu", gray);
+        "Left/Right: Navigate  |  Enter: Lobby  |  ESC: Menu", white);
     if (instrSurface)
     {
         SDL_Texture *instrTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, instrSurface);
@@ -2687,7 +2688,7 @@ void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx)
         {
             SDL_Rect instrRect = {
                 WINDOW_WIDTH / 2 - instrSurface->w / 2,
-                WINDOW_HEIGHT - 70,
+                WINDOW_HEIGHT - 30,
                 instrSurface->w,
                 instrSurface->h
             };
@@ -2853,8 +2854,10 @@ void Renderer_DrawScoreboard(Renderer *_Renderer, Scoreboard *_Scoreboard, unsig
 
 /* Main frame rendering - handles all game states */
 void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_MpCtx,
-                         Scoreboard *_Scoreboard, unsigned int _CurrentTime, int _MainMenuSelection)
+                         Scoreboard *_Scoreboard, unsigned int _CurrentTime, int _MainMenuSelection, void *_Audio)
 {
+    (void)_Audio;  // Used in multiplayer for chat sounds
+
     // Clear screen
     Renderer_Clear(_Renderer);
 
@@ -3092,15 +3095,31 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
                 int seconds_left = (_MpCtx->gameStartTime - _CurrentTime) / 1000 + 1;
                 int time_in_second = _CurrentTime % 1000;
 
-                // Black overlay - fully opaque for 3 and 2, fading out for 1
+                // Pulsating lightning effect overlay
                 SDL_SetRenderDrawBlendMode(_Renderer->sdlRenderer, SDL_BLENDMODE_BLEND);
+
+                // Create pulsating effect with sin wave
+                float pulse_cycle = (_CurrentTime % 300) / 300.0f;  // Fast pulse (300ms cycle)
+                float pulse_intensity = (sin(pulse_cycle * 3.14159f * 2) + 1.0f) / 2.0f; // 0.0 to 1.0
+
+                // Add random lightning flashes
+                int flash_chance = _CurrentTime % 100;
+                float flash_intensity = (flash_chance < 10) ? 0.8f : 0.0f; // 10% chance of flash
+
+                // Combine pulse and flash
+                float combined_intensity = fmin(1.0f, pulse_intensity * 0.4f + flash_intensity);
+
                 int overlay_alpha = 255;
                 if (seconds_left == 1)
                 {
                     // Fade from black (255) to transparent (0) during the last second
                     overlay_alpha = 255 - (time_in_second * 255 / 1000);
+                    combined_intensity *= (overlay_alpha / 255.0f);
                 }
-                SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 0, 0, 0, overlay_alpha);
+
+                // Mix black with white lightning effect
+                int lightning_value = (int)(combined_intensity * 255);
+                SDL_SetRenderDrawColor(_Renderer->sdlRenderer, lightning_value, lightning_value, lightning_value, overlay_alpha);
                 SDL_Rect overlayRect = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
                 SDL_RenderFillRect(_Renderer->sdlRenderer, &overlayRect);
 

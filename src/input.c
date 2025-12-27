@@ -10,7 +10,7 @@
 int g_main_menu_selection = 0;
 bool g_score_saved = false;
 
-void Input_HandleMainMenuInput(Game *_Game, SDL_Event *_Event, MultiplayerContext **_MpCtx)
+void Input_HandleMainMenuInput(Game *_Game, SDL_Event *_Event, MultiplayerContext **_MpCtx, void *_Audio)
 {
     if (_Event->type == SDL_KEYDOWN)
     {
@@ -37,6 +37,10 @@ void Input_HandleMainMenuInput(Game *_Game, SDL_Event *_Event, MultiplayerContex
                 if (!*_MpCtx)
                 {
                     *_MpCtx = Multiplayer_Create();
+                    if (*_MpCtx)
+                    {
+                        (*_MpCtx)->audio = _Audio;
+                    }
                 }
             }
             else if (g_main_menu_selection == 2)
@@ -935,7 +939,7 @@ void Input_HandleInput(Game *_Game, SDL_Event *_Event, MultiplayerContext **_MpC
 
     if (_Game->state == GAME_MAIN_MENU)
     {
-        Input_HandleMainMenuInput(_Game, _Event, _MpCtx);
+        Input_HandleMainMenuInput(_Game, _Event, _MpCtx, _Audio);
     }
     else if (_Game->state == GAME_MODE_SELECT)
     {

@@ -1,4 +1,5 @@
 #include "../include/multiplayer.h"
+#include "../include/audio.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -250,7 +251,7 @@ static void mpapiEventCallback(const char *event, int64_t messageId, const char 
             {
                 ctx->gameMode = (MultiplayerGameMode)json_integer_value(gameModeObj);
                 printf("Host selected game mode: %s\n",
-                       ctx->gameMode == MP_MODE_REALTIME ? "REALTIME" : "TURN BATTLE");
+                       ctx->gameMode == MP_MODE_1VS1 ? "1VS1" : "TURN BATTLE");
             }
         }
         else if (strcmp(msgType, "start_game") == 0)
@@ -303,6 +304,12 @@ static void mpapiEventCallback(const char *event, int64_t messageId, const char 
                 strncpy(ctx->chatMessages[ctx->chatCount], message, sizeof(ctx->chatMessages[0]) - 1);
                 ctx->chatMessages[ctx->chatCount][sizeof(ctx->chatMessages[0]) - 1] = '\0';
                 ctx->chatCount++;
+
+                // Play chat notification sound
+                if (ctx->audio)
+                {
+                    Audio_PlaySound((AudioSystem *)ctx->audio, SOUND_CHAT);
+                }
 
                 printf("✓ Chat message received from other player: %s\n", message);
             }
@@ -540,6 +547,7 @@ MultiplayerContext* Multiplayer_Create(void)
     ctx->localPlayerIndex = -1;
     ctx->currentSpeed = BASE_SPEED;
     ctx->listenerId = -1;
+    ctx->audio = NULL;  // Will be set by caller
     ctx->menuSelection = 0;
     ctx->sessionInputLen = 0;
     memset(ctx->sessionInput, 0, sizeof(ctx->sessionInput));
@@ -561,7 +569,7 @@ MultiplayerContext* Multiplayer_Create(void)
     memset(ctx->nickInput, 0, sizeof(ctx->nickInput));
 
     // Initialize turn battle
-    ctx->gameMode = MP_MODE_REALTIME;  // Default to realtime
+    ctx->gameMode = MP_MODE_TURN_BATTLE;  // Default to turn battle
     ctx->modeSelection = 0;
     ctx->currentAttempt = 0;
     ctx->attemptStartTime = 0;
@@ -600,11 +608,11 @@ int Multiplayer_Host(MultiplayerContext *_Ctx, const char *_PlayerName)
     _Ctx->state = MP_STATE_HOSTING;
 
     // Set game mode based on selection
-    _Ctx->gameMode = (_Ctx->modeSelection == 0) ? MP_MODE_REALTIME : MP_MODE_TURN_BATTLE;
+    _Ctx->gameMode = (_Ctx->modeSelection == 0) ? MP_MODE_TURN_BATTLE : MP_MODE_1VS1;
 
     // Map names with de_ prefix
     const char *mapNames[] = {"de_cyberpunk", "de_forest", "de_underwater", "de_mountain", "de_country"};
-    const char *modeNames[] = {"REALTIME", "TURN BATTLE"};
+    const char *modeNames[] = {"TURN BATTLE", "1VS1"};
 
     printf("DEBUG: selectedBackground = %d (%s), gameMode = %s\n",
            _Ctx->selectedBackground,
@@ -612,8 +620,8 @@ int Multiplayer_Host(MultiplayerContext *_Ctx, const char *_PlayerName)
            modeNames[_Ctx->gameMode]);
 
     // Format room name with student number, map ID and game mode encoded in the name
-    // Format: [67] roomname |m2| |gRT| where 2 is map ID and RT is game mode (RT=REALTIME, TB=TURN BATTLE)
-    const char *modeCode = (_Ctx->gameMode == MP_MODE_REALTIME) ? "RT" : "TB";
+    // Format: [67] roomname |m2| |g1V| where 2 is map ID and 1V is game mode (1V=1VS1, TB=TURN BATTLE)
+    const char *modeCode = (_Ctx->gameMode == MP_MODE_1VS1) ? "1V" : "TB";
     char nameWithId[128];
     snprintf(nameWithId, sizeof(nameWithId), "[%s] %s |m%d| |g%s|",
              STUDENT_NUMBER, _Ctx->roomName, _Ctx->selectedBackground, modeCode);
@@ -1589,12 +1597,12 @@ int Multiplayer_BrowseGames(MultiplayerContext *_Ctx)
             }
             _Ctx->browsedGames[_Ctx->browsedGameCount].mapId = mapId;
 
-            // Parse game mode from name format: "|gRT|" or "|gTB|"
-            MultiplayerGameMode gameMode = MP_MODE_REALTIME;  // Default
+            // Parse game mode from name format: "|g1V|" or "|gTB|"
+            MultiplayerGameMode gameMode = MP_MODE_1VS1;  // Default
             const char *modeMarker = strstr(name, "|g");
             if (modeMarker)
             {
-                // Check if it's TURN BATTLE (TB) or REALTIME (RT)
+                // Check if it's TURN BATTLE (TB) or 1VS1 (1V)
                 if (strncmp(modeMarker + 2, "TB", 2) == 0)
                 {
                     gameMode = MP_MODE_TURN_BATTLE;
@@ -1602,12 +1610,12 @@ int Multiplayer_BrowseGames(MultiplayerContext *_Ctx)
                 }
                 else
                 {
-                    printf("✓ Parsed game mode: REALTIME\n");
+                    printf("✓ Parsed game mode: 1VS1\n");
                 }
             }
             else
             {
-                printf("⚠ No game mode info found, defaulting to REALTIME\n");
+                printf("⚠ No game mode info found, defaulting to 1VS1\n");
             }
             _Ctx->browsedGames[_Ctx->browsedGameCount].gameMode = gameMode;
 
