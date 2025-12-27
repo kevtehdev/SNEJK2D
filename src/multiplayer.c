@@ -429,6 +429,14 @@ static void mpapiEventCallback(const char *event, int64_t messageId, const char 
                 }
             }
         }
+        else if (strcmp(msgType, "turn_battle_mode_changed") == 0)
+        {
+            // Turn Battle mode changed by host
+            int mode = json_integer_value(json_object_get(data, "mode"));
+            ctx->turnBattleMode = (GameMode)mode;
+            ctx->turnBattleModeSelection = (mode == MODE_CLASSIC) ? 0 : 1;
+            printf("✓ Turn Battle mode changed to: %s\n", mode == MODE_CLASSIC ? "CLASSIC" : "POWER-UP");
+        }
         else if (strcmp(msgType, "turn_results") == 0)
         {
             // Turn battle results from a player
@@ -573,6 +581,8 @@ MultiplayerContext *Multiplayer_Create(void)
     // Initialize turn battle
     ctx->gameMode = MP_MODE_TURN_BATTLE; // Default to turn battle
     ctx->modeSelection = 0;
+    ctx->turnBattleMode = MODE_CLASSIC; // Default to classic mode
+    ctx->turnBattleModeSelection = 0; // 0 = Classic
     ctx->currentAttempt = 0;
     ctx->attemptStartTime = 0;
     ctx->resultPageIndex = 0;
@@ -1695,6 +1705,7 @@ void Multiplayer_StartTurnAttempt(MultiplayerContext *_Ctx)
     Game_Init(&_Ctx->localGame);
     _Ctx->localGame.state = GAME_PLAYING;
     _Ctx->localGame.selectedBackground = _Ctx->selectedBackground;
+    _Ctx->localGame.gameMode = _Ctx->turnBattleMode; // Apply selected mode (Classic or Power-Up)
 
     // Start with countdown (same as 1VS1 mode)
     _Ctx->state = MP_STATE_COUNTDOWN;
