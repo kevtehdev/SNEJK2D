@@ -810,7 +810,7 @@ void Renderer_DrawMenu(Renderer *_Renderer, int _SelectedBg)
 void Renderer_DrawModeSelect(Renderer *_Renderer, Game *_Game)
 {
     SDL_Color white = {255, 255, 255, 255};
-    SDL_Color yellow = {255, 255, 0, 255};
+    SDL_Color green = {100, 200, 100, 255};
     SDL_Color gray = {150, 150, 150, 255};
 
     /* Title */
@@ -828,7 +828,7 @@ void Renderer_DrawModeSelect(Renderer *_Renderer, Game *_Game)
     }
 
     /* Classic Mode */
-    SDL_Color classicColor = (_Game->modeSelection == 0) ? yellow : gray;
+    SDL_Color classicColor = (_Game->modeSelection == 0) ? green : gray;
     SDL_Surface *classicSurface = TTF_RenderText_Solid(_Renderer->fontMedium, "CLASSIC MODE", classicColor);
     if (classicSurface)
     {
@@ -857,7 +857,7 @@ void Renderer_DrawModeSelect(Renderer *_Renderer, Game *_Game)
     }
 
     /* Power-Up Mode */
-    SDL_Color powerupColor = (_Game->modeSelection == 1) ? yellow : gray;
+    SDL_Color powerupColor = (_Game->modeSelection == 1) ? green : gray;
     SDL_Surface *powerupSurface = TTF_RenderText_Solid(_Renderer->fontMedium, "POWER-UP MODE", powerupColor);
     if (powerupSurface)
     {
