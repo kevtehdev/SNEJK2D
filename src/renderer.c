@@ -2396,7 +2396,8 @@ void Renderer_DrawTurnPlaying(Renderer *_Renderer, MultiplayerContext *_MpCtx)
 
     // Draw the local game (background, grid, snake, food, etc.)
     Renderer_DrawBackground(_Renderer, SDL_GetTicks());
-    Renderer_DrawGrid(_Renderer, 30);
+    Renderer_DrawBackgroundOverlay(_Renderer);
+    Renderer_DrawGrid(_Renderer, 2);
     Renderer_DrawWalls(_Renderer);
 
     if (_MpCtx->localGame.state == GAME_PLAYING)
@@ -3178,37 +3179,34 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
                 Renderer_DrawMultiplayerGame(_Renderer, _MpCtx);
             }
 
-            // Show minimalistic countdown (3, 2, 1) over game field
+            // Show intense countdown (3, 2, 1) with zoom-in and dark pulsing overlay
             if (_MpCtx->state == MP_STATE_COUNTDOWN)
             {
                 int seconds_left = (_MpCtx->gameStartTime - _CurrentTime) / 1000 + 1;
                 int time_in_second = _CurrentTime % 1000;
 
-                // Pulsating lightning effect overlay
+                // Very dark pulsing overlay - game barely visible until countdown reaches 1
                 SDL_SetRenderDrawBlendMode(_Renderer->sdlRenderer, SDL_BLENDMODE_BLEND);
 
-                // Create pulsating effect with sin wave
-                float pulse_cycle = (_CurrentTime % 300) / 300.0f;                       // Fast pulse (300ms cycle)
-                float pulse_intensity = (sin(pulse_cycle * 3.14159f * 2) + 1.0f) / 2.0f; // 0.0 to 1.0
+                // Base darkness levels - much darker now
+                int base_alpha = 0;
+                if (seconds_left == 3)
+                    base_alpha = 240; // Almost black
+                else if (seconds_left == 2)
+                    base_alpha = 220; // Still very dark
+                else if (seconds_left == 1)
+                    base_alpha = 180 - (time_in_second * 180 / 1000); // Fade out during last second
 
-                // Add random lightning flashes
-                int flash_chance = _CurrentTime % 100;
-                float flash_intensity = (flash_chance < 10) ? 0.8f : 0.0f; // 10% chance of flash
+                // Strong pulsating effect
+                float pulse_cycle = (_CurrentTime % 250) / 250.0f;
+                float pulse = (sin(pulse_cycle * 3.14159f * 2) + 1.0f) / 2.0f;
+                int pulse_alpha = (int)(pulse * 40); // Strong pulse
 
-                // Combine pulse and flash
-                float combined_intensity = fmin(1.0f, pulse_intensity * 0.4f + flash_intensity);
+                int final_alpha = base_alpha + pulse_alpha;
+                if (final_alpha < 0) final_alpha = 0;
+                if (final_alpha > 255) final_alpha = 255;
 
-                int overlay_alpha = 255;
-                if (seconds_left == 1)
-                {
-                    // Fade from black (255) to transparent (0) during the last second
-                    overlay_alpha = 255 - (time_in_second * 255 / 1000);
-                    combined_intensity *= (overlay_alpha / 255.0f);
-                }
-
-                // Mix black with white lightning effect
-                int lightning_value = (int)(combined_intensity * 255);
-                SDL_SetRenderDrawColor(_Renderer->sdlRenderer, lightning_value, lightning_value, lightning_value, overlay_alpha);
+                SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 0, 0, 0, final_alpha);
                 SDL_Rect overlayRect = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
                 SDL_RenderFillRect(_Renderer->sdlRenderer, &overlayRect);
 
@@ -3222,11 +3220,10 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
 
                 if (countdown_text)
                 {
-                    // Clean white color
                     SDL_Color white = {255, 255, 255, 255};
 
-                    // Smooth pulse effect - grows from 0.6 to 1.2 scale over the second
-                    float pulse = 0.6f + 0.6f * (time_in_second / 1000.0f);
+                    // Zoom-in effect - starts big (2.5x) and shrinks to normal size (1.0x)
+                    float scale = 2.5f - (1.5f * (time_in_second / 1000.0f));
 
                     // Fade in effect at start of each second
                     int text_alpha = (time_in_second < 100) ? (time_in_second * 255 / 100) : 255;
@@ -3239,14 +3236,14 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
                         {
                             SDL_SetTextureAlphaMod(texture, text_alpha);
 
-                            int pulsed_w = (int)(surface->w * pulse);
-                            int pulsed_h = (int)(surface->h * pulse);
+                            int scaled_w = (int)(surface->w * scale);
+                            int scaled_h = (int)(surface->h * scale);
 
                             SDL_Rect dest = {
-                                WINDOW_WIDTH / 2 - pulsed_w / 2,
-                                WINDOW_HEIGHT / 2 - pulsed_h / 2,
-                                pulsed_w,
-                                pulsed_h};
+                                WINDOW_WIDTH / 2 - scaled_w / 2,
+                                WINDOW_HEIGHT / 2 - scaled_h / 2,
+                                scaled_w,
+                                scaled_h};
                             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
                             SDL_DestroyTexture(texture);
                         }
