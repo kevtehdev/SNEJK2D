@@ -1,12 +1,15 @@
 # Build artifacts
 build/
 build-win/
+build_win/
 *.o
 *.a
 *.exe
+*.dll
 snejk2d
 .md/
 .scoreboard.json
+release_tmp/
 
 # IDE
 .vscode/

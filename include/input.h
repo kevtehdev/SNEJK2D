@@ -12,7 +12,7 @@ extern int g_main_menu_selection;
 extern bool g_score_saved;
 
 // Input handlers
-void Input_HandleMainMenuInput(Game *_Game, SDL_Event *_Event, MultiplayerContext **_MpCtx);
+void Input_HandleMainMenuInput(Game *_Game, SDL_Event *_Event, MultiplayerContext **_MpCtx, void *_Audio);
 void Input_HandleNameInput(Game *_Game, SDL_Event *_Event);
 void Input_HandleGameMenuInput(Game *_Game, SDL_Event *_Event);
 void Input_HandlePlayingInput(Game *_Game, SDL_Event *_Event);

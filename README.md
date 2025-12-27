@@ -37,7 +37,25 @@ snejk2d.exe
 
 Two players compete online. One creates lobby (HOST GAME), the other joins (JOIN GAME).
 
-First player to die loses.
+**Spelsätt:**
+- **1VS1**: Klassiskt multiplayer där första som dör förlorar
+- **TURN BATTLE**: Varje spelare spelar 3 försök solo, högsta poäng vinner
+
+### Testning av multiplayer lokalt
+
+För att testa multiplayer på samma dator, starta två terminaler:
+
+**Terminal 1 (HOST med ljud):**
+```bash
+./snejk2d
+```
+
+**Terminal 2 (CLIENT utan ljud):**
+```bash
+SNEJK2D_NO_AUDIO=1 ./snejk2d
+```
+
+Detta förhindrar ljudkonflikter när båda instanserna körs samtidigt.
 
 ## Building
 

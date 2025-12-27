@@ -135,7 +135,22 @@ void Renderer_DrawMultiplayerGame(Renderer *_Renderer, MultiplayerContext *_MpCt
 /* Draw multiplayer HUD border */
 void Renderer_DrawMultiplayerHudBorder(Renderer *_Renderer, MultiplayerContext *_MpCtx);
 
+/* Draw mode selection screen */
+void Renderer_DrawModeSelection(Renderer *_Renderer, MultiplayerContext *_MpCtx);
+
+/* Draw ready-up screen for turn battle */
+void Renderer_DrawReadyUp(Renderer *_Renderer, MultiplayerContext *_MpCtx);
+
+/* Draw turn playing screen */
+void Renderer_DrawTurnPlaying(Renderer *_Renderer, MultiplayerContext *_MpCtx);
+
+/* Draw turn waiting screen */
+void Renderer_DrawTurnWaiting(Renderer *_Renderer, MultiplayerContext *_MpCtx);
+
+/* Draw turn battle results */
+void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx);
+
 /* Main rendering function - handles all game states */
-void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_MpCtx, Scoreboard *_Scoreboard, unsigned int _CurrentTime, int _MainMenuSelection);
+void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_MpCtx, Scoreboard *_Scoreboard, unsigned int _CurrentTime, int _MainMenuSelection, void *_Audio);
 
 #endif
