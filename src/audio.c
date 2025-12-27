@@ -21,7 +21,8 @@ bool Audio_Init(AudioSystem *_Audio)
     }
 
     // Use 44100 Hz to match most audio files (avoid heavy resampling)
-    int bufferSize = 2048;;
+    // Increased buffer size to 4096 to reduce crackling
+    int bufferSize = 4096;
     int sampleRate = 44100;
 
     // Initialize SDL_mixer settings
@@ -48,7 +49,7 @@ bool Audio_Init(AudioSystem *_Audio)
     _Audio->sfxEnabled = true;
     _Audio->masterVolume = 0.5f;
     _Audio->currentMusic = NULL;
-    _Audio->nextChannel = 0;  
+    _Audio->nextChannel = 0;
 
     // Initialize sound slots
     for (int i = 0; i < SOUND_COUNT; i++)
@@ -73,6 +74,13 @@ bool Audio_Init(AudioSystem *_Audio)
     if (!_Audio->multiplayerMusic)
     {
         fprintf(stderr, "Warning: Failed to load multiplayer music: %s\n", Mix_GetError());
+    }
+
+    // Load sound effects
+    _Audio->sounds[SOUND_CHAT] = Mix_LoadWAV("assets/music/chat-message-sound.wav");
+    if (!_Audio->sounds[SOUND_CHAT])
+    {
+        fprintf(stderr, "Warning: Failed to load chat sound: %s\n", Mix_GetError());
     }
 
     // Set music volume
@@ -142,7 +150,8 @@ void Audio_PlaySound(AudioSystem *_Audio, SoundType _Sound)
         _Audio->nextChannel++;
 
         // Set volume on specific channel and play sound
-        Mix_Volume(channel, (int)(_Audio->masterVolume * 128));
+        // Reduced from 128 to 80 to prevent crackling/distortion
+        Mix_Volume(channel, (int)(_Audio->masterVolume * 80));
         Mix_PlayChannel(channel, (Mix_Chunk *)_Audio->sounds[_Sound], 0);
     }
 }

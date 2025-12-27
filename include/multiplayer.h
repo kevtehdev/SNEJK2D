@@ -19,8 +19,8 @@ typedef enum {
 
 // Game modes
 typedef enum {
-    MP_MODE_REALTIME = 0,    // Classic 1v1 realtime
-    MP_MODE_TURN_BATTLE = 1  // Turn-based 3 attempts
+    MP_MODE_TURN_BATTLE = 0, // Turn-based 3 attempts
+    MP_MODE_1VS1 = 1         // Classic 1v1 realtime
 } MultiplayerGameMode;
 
 // Multiplayer states
@@ -89,6 +89,9 @@ typedef struct {
     // mpapi
     mpapi *api;
     int listenerId;
+
+    // Audio
+    void *audio;  // AudioSystem pointer (void* to avoid circular dependency)
 
     // Game state
     MultiplayerState state;

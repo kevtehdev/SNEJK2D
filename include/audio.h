@@ -7,6 +7,8 @@ typedef enum {
     SOUND_EAT,
     SOUND_DEATH,
     SOUND_MENU_SELECT,
+    SOUND_COUNTDOWN,
+    SOUND_CHAT,
     SOUND_COUNT
 } SoundType;
 
