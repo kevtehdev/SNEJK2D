@@ -23,7 +23,6 @@ mkdir -p release_tmp/snejk2d-$VERSION-linux
 cp snejk2d release_tmp/snejk2d-$VERSION-linux/
 cp -r assets release_tmp/snejk2d-$VERSION-linux/
 cp README.md release_tmp/snejk2d-$VERSION-linux/
-cp LICENSE release_tmp/snejk2d-$VERSION-linux/
 
 # Package Linux version
 echo "Packaging Linux version..."
@@ -45,7 +44,6 @@ cp snejk2d.exe release_tmp/snejk2d-$VERSION-windows/
 cp *.dll release_tmp/snejk2d-$VERSION-windows/
 cp -r assets release_tmp/snejk2d-$VERSION-windows/
 cp README.md release_tmp/snejk2d-$VERSION-windows/
-cp LICENSE release_tmp/snejk2d-$VERSION-windows/
 
 # Package Windows version
 echo "Packaging Windows version..."
