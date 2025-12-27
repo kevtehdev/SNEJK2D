@@ -66,8 +66,8 @@ void Renderer_DrawBackgroundOverlay(Renderer *_Renderer);
 /* Draw brightness overlay */
 void Renderer_DrawBrightnessOverlay(Renderer *_Renderer, float _Brightness);
 
-/* Draw HUD border with score */
-void Renderer_DrawHudBorderWithScore(Renderer *_Renderer, int _Score);
+/* Draw HUD border with score or attempt counter */
+void Renderer_DrawHudBorderWithScore(Renderer *_Renderer, int _Score, int _Attempt, bool _ShowAttempt);
 
 /* Draw HUD border with combo */
 void Renderer_DrawHudBorderWithCombo(Renderer *_Renderer, int _Score, int _Combo, float _Multiplier, GameMode _GameMode, bool _ComboEffects);

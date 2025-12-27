@@ -1271,6 +1271,15 @@ void Multiplayer_UpdateCountdown(MultiplayerContext *_Ctx, unsigned int _Current
     // Check if countdown finished
     if (_CurrentTime >= _Ctx->gameStartTime)
     {
+        // For turn battle, go to TURN_PLAYING state
+        if (_Ctx->gameMode == MP_MODE_TURN_BATTLE)
+        {
+            _Ctx->state = MP_STATE_TURN_PLAYING;
+            printf("Countdown finished - starting turn battle attempt\n");
+            return;
+        }
+
+        // For 1VS1 mode, go to PLAYING state
         _Ctx->state = MP_STATE_PLAYING;
         _Ctx->lastMoveTime = _CurrentTime;
 
@@ -1686,10 +1695,14 @@ void Multiplayer_StartTurnAttempt(MultiplayerContext *_Ctx)
     Game_Init(&_Ctx->localGame);
     _Ctx->localGame.state = GAME_PLAYING;
     _Ctx->localGame.selectedBackground = _Ctx->selectedBackground;
-    _Ctx->attemptStartTime = SDL_GetTicks();
-    _Ctx->state = MP_STATE_TURN_PLAYING;
 
-    printf("Starting turn attempt %d/3\n", _Ctx->currentAttempt + 1);
+    // Start with countdown (same as 1VS1 mode)
+    _Ctx->state = MP_STATE_COUNTDOWN;
+    _Ctx->countdownStart = SDL_GetTicks();
+    _Ctx->gameStartTime = _Ctx->countdownStart + 3000; // 3 second countdown
+    _Ctx->attemptStartTime = _Ctx->gameStartTime; // Attempt starts after countdown
+
+    printf("Starting turn attempt %d/3 with countdown\n", _Ctx->currentAttempt + 1);
 }
 
 void Multiplayer_FinishTurnAttempt(MultiplayerContext *_Ctx)
