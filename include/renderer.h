@@ -151,6 +151,6 @@ void Renderer_DrawTurnWaiting(Renderer *_Renderer, MultiplayerContext *_MpCtx);
 void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx);
 
 /* Main rendering function - handles all game states */
-void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_MpCtx, Scoreboard *_Scoreboard, unsigned int _CurrentTime, int _MainMenuSelection);
+void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_MpCtx, Scoreboard *_Scoreboard, unsigned int _CurrentTime, int _MainMenuSelection, void *_Audio);
 
 #endif

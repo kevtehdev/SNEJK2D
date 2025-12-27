@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
             }
             else if (game.state == GAME_MAIN_MENU)
             {
-                Input_HandleMainMenuInput(&game, &event, &mpCtx);
+                Input_HandleMainMenuInput(&game, &event, &mpCtx, &audio);
             }
             else
             {
@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
         }
 
         // Render everything
-        Renderer_DrawFrame(&renderer, &game, mpCtx, &scoreboard, currentTime, g_main_menu_selection);
+        Renderer_DrawFrame(&renderer, &game, mpCtx, &scoreboard, currentTime, g_main_menu_selection, &audio);
 
         SDL_Delay(16);  // ~60 FPS
     }
