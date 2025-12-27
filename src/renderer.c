@@ -1910,10 +1910,29 @@ void Renderer_DrawMultiplayerLobby(Renderer *_Renderer, MultiplayerContext *_MpC
     }
 
     // Game Mode display (for both host and client)
-    const char *mode_names[] = {"TURN BATTLE", "1VS1"};
     char mode_text[64];
-    snprintf(mode_text, sizeof(mode_text), "MODE: %s", mode_names[_MpCtx->gameMode]);
-    SDL_Surface *mode_surface = TTF_RenderText_Solid(_Renderer->fontSmall, mode_text, white);
+    if (_MpCtx->gameMode == MP_MODE_TURN_BATTLE)
+    {
+        const char *tb_mode_names[] = {"CLASSIC", "POWER-UP"};
+        if (_MpCtx->isHost)
+        {
+            // Host can change - show < > arrows
+            snprintf(mode_text, sizeof(mode_text), "MODE: TURN BATTLE - < %s >", tb_mode_names[_MpCtx->turnBattleModeSelection]);
+        }
+        else
+        {
+            // Client just sees current mode
+            snprintf(mode_text, sizeof(mode_text), "MODE: TURN BATTLE - %s", tb_mode_names[_MpCtx->turnBattleModeSelection]);
+        }
+    }
+    else
+    {
+        // 1VS1 mode
+        snprintf(mode_text, sizeof(mode_text), "MODE: 1VS1");
+    }
+
+    SDL_Color cyan = {100, 220, 255, 255};
+    SDL_Surface *mode_surface = TTF_RenderText_Solid(_Renderer->fontSmall, mode_text, _MpCtx->gameMode == MP_MODE_TURN_BATTLE ? cyan : white);
     if (mode_surface)
     {
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, mode_surface);
@@ -1924,38 +1943,6 @@ void Renderer_DrawMultiplayerLobby(Renderer *_Renderer, MultiplayerContext *_MpC
             SDL_DestroyTexture(texture);
         }
         SDL_FreeSurface(mode_surface);
-    }
-
-    // Turn Battle mode selection (Classic vs Power-Up) - only for Turn Battle
-    if (_MpCtx->gameMode == MP_MODE_TURN_BATTLE)
-    {
-        const char *tb_mode_names[] = {"CLASSIC", "POWER-UP"};
-        char tb_mode_text[64];
-
-        if (_MpCtx->isHost)
-        {
-            // Host can change - show < > arrows
-            snprintf(tb_mode_text, sizeof(tb_mode_text), "< %s >", tb_mode_names[_MpCtx->turnBattleModeSelection]);
-        }
-        else
-        {
-            // Client just sees current mode
-            snprintf(tb_mode_text, sizeof(tb_mode_text), "%s", tb_mode_names[_MpCtx->turnBattleModeSelection]);
-        }
-
-        SDL_Color cyan = {100, 220, 255, 255};
-        SDL_Surface *tb_mode_surface = TTF_RenderText_Solid(_Renderer->fontSmall, tb_mode_text, cyan);
-        if (tb_mode_surface)
-        {
-            SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, tb_mode_surface);
-            if (texture)
-            {
-                SDL_Rect dest = {WINDOW_WIDTH / 2 - tb_mode_surface->w / 2, _MpCtx->isHost ? 205 : 170, tb_mode_surface->w, tb_mode_surface->h};
-                SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
-                SDL_DestroyTexture(texture);
-            }
-            SDL_FreeSurface(tb_mode_surface);
-        }
     }
 
     // Player list - only show players who have joined
@@ -2395,8 +2382,11 @@ void Renderer_DrawReadyUp(Renderer *_Renderer, MultiplayerContext *_MpCtx)
     SDL_Color red = {255, 100, 100, 255};
     SDL_Color gray = {150, 150, 150, 255};
 
-    // Title
-    SDL_Surface *titleSurface = TTF_RenderText_Solid(_Renderer->fontLarge, "TURN BATTLE - READY UP", white);
+    // Title with mode
+    const char *modeName = (_MpCtx->turnBattleMode == MODE_POWERUP) ? "POWER-UP" : "CLASSIC";
+    char titleText[64];
+    snprintf(titleText, sizeof(titleText), "TURN BATTLE - %s", modeName);
+    SDL_Surface *titleSurface = TTF_RenderText_Solid(_Renderer->fontLarge, titleText, white);
     if (titleSurface)
     {
         SDL_Texture *titleTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, titleSurface);
