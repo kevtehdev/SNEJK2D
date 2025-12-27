@@ -35,11 +35,11 @@ snejk2d.exe
 
 ## Multiplayer
 
-Two players compete online. One creates lobby (HOST GAME), the other joins (JOIN GAME).
+Players compete online. One creates lobby (HOST GAME), others join (JOIN GAME). Supports up to 10 players.
 
 **Spelsätt:**
-- **1VS1**: Klassiskt multiplayer där första som dör förlorar
-- **TURN BATTLE**: Varje spelare spelar 3 försök solo, högsta poäng vinner
+- **1VS1**: Klassiskt multiplayer där första som dör förlorar (2 spelare)
+- **TURN BATTLE**: Varje spelare spelar 3 försök solo, högsta poäng vinner (upp till 10 spelare)
   - Host kan välja mellan Classic och Power-Up mode med piltangenter i lobby
 
 ### Testning av multiplayer lokalt
