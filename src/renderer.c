@@ -886,7 +886,7 @@ void Renderer_DrawModeSelect(Renderer *_Renderer, Game *_Game)
     }
 
     /* Instructions */
-    SDL_Surface *instrSurface = TTF_RenderText_Solid(_Renderer->fontSmall, "ENTER to confirm, ESC to go back", gray);
+    SDL_Surface *instrSurface = TTF_RenderText_Solid(_Renderer->fontSmall, "ENTER CONFIRM   ESC BACK", white);
     if (instrSurface)
     {
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, instrSurface);
