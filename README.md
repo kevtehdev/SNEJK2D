@@ -1,75 +1,91 @@
 # SNEJK2D
 
-Snake game with singleplayer and multiplayer.
+A modern Snake game with singleplayer and online multiplayer. Built with SDL2 in C.
 
-## Play
+## Quick Start
 
+**Linux:**
 ```bash
 ./snejk2d
 ```
 
-Windows:
+**Windows:**
 ```bash
 snejk2d.exe
 ```
 
+## Game Modes
+
+### Singleplayer
+
+**Classic Mode**
+Traditional snake gameplay. Eat food, grow longer, avoid walls and yourself.
+
+**Power-Up Mode**
+Enhanced gameplay with collectible power-ups and a level system:
+- **Golden Apple** (yellow): +3 length
+- **Speed Boost** (cyan): temporary speed increase
+- **Shield** (blue): one-hit protection
+- **Score Multiplier** (magenta): 10x points for 5 seconds
+
+Gain 10 XP per food eaten. Level up at 100, 150, 200, 250 XP and beyond.
+
+### Multiplayer
+
+Supports up to 10 players online. One player hosts, others join using the session code.
+
+**1VS1 Mode** (2 players)
+Classic competitive mode. First to die loses.
+
+**Turn Battle Mode** (up to 10 players)
+Each player gets 3 solo attempts. Highest score wins. Host can choose between Classic and Power-Up gameplay using arrow keys in the lobby.
+
 ## Controls
 
 **Menus:**
-- Arrow keys / WASD: navigate
-- Enter: select
-- ESC: back
+- Arrow keys / WASD: Navigate
+- Enter: Select
+- ESC: Back
 
-**Game:**
-- Arrow keys / WASD: move
+**In-Game:**
+- Arrow keys / WASD: Move snake
 
-## Game Modes
+**Multiplayer Lobby:**
+- Space: Ready/unready
+- Enter: Start game (host only)
+- C: Open chat
+- N: Change nickname
+- Arrow keys: Change mode (host only, Turn Battle)
 
-**Classic:** Traditional snake gameplay
+## Building from Source
 
-**Power-Up:** Enhanced mode with collectible power-ups
-- Golden Apple (yellow): +3 length
-- Speed Boost (cyan): temporary speed increase
-- Shield (blue): one-hit protection
-- Score Multiplier (magenta): 10x points for 5 seconds
+Requires SDL2, SDL2_image, SDL2_ttf, SDL2_mixer, jansson, and uuid.
 
-## Multiplayer
+**Ubuntu/Debian/WSL2:**
+```bash
+make deps  # Install dependencies
+make       # Build
+```
 
-Players compete online. One creates lobby (HOST GAME), others join (JOIN GAME). Supports up to 10 players.
+**Windows:**
+Requires MinGW cross-compiler and SDL2 libraries. See `build_windows.sh` for details.
 
-**Spelsätt:**
-- **1VS1**: Klassiskt multiplayer där första som dör förlorar (2 spelare)
-- **TURN BATTLE**: Varje spelare spelar 3 försök solo, högsta poäng vinner (upp till 10 spelare)
-  - Host kan välja mellan Classic och Power-Up mode med piltangenter i lobby
+## Testing Multiplayer Locally
 
-### Testning av multiplayer lokalt
+Run two instances on the same machine:
 
-För att testa multiplayer på samma dator, starta två terminaler:
-
-**Terminal 1 (HOST med ljud):**
+**Terminal 1 (with audio):**
 ```bash
 ./snejk2d
 ```
 
-**Terminal 2 (CLIENT utan ljud):**
+**Terminal 2 (without audio):**
 ```bash
 SNEJK2D_NO_AUDIO=1 ./snejk2d
 ```
 
-Detta förhindrar ljudkonflikter när båda instanserna körs samtidigt.
-
-## Building
-
-Requires SDL2, SDL2_image, SDL2_ttf, SDL2_mixer, jansson and uuid.
-
-Ubuntu/WSL2:
-```bash
-make deps
-make
-```
-
-Windows requires MinGW and SDL2 libraries.
+This prevents audio conflicts when running multiple instances.
 
 ## License
 
-See LICENSE file.
+See LICENSE file for details.
