@@ -1401,6 +1401,7 @@ json_t *Multiplayer_SerializeState(MultiplayerContext *_Ctx)
     json_object_set_new(state, "mpState", json_integer((int)_Ctx->state));
     json_object_set_new(state, "current_speed", json_integer(_Ctx->currentSpeed));
     json_object_set_new(state, "selected_background", json_integer(_Ctx->selectedBackground));
+    json_object_set_new(state, "turn_battle_mode", json_integer((int)_Ctx->turnBattleMode));
 
     return state;
 }
@@ -1525,6 +1526,13 @@ void Multiplayer_DeserializeState(MultiplayerContext *_Ctx, json_t *_Data)
     if (background)
     {
         _Ctx->selectedBackground = json_integer_value(background);
+    }
+
+    json_t *turnBattleMode = json_object_get(_Data, "turn_battle_mode");
+    if (turnBattleMode)
+    {
+        _Ctx->turnBattleMode = (GameMode)json_integer_value(turnBattleMode);
+        _Ctx->turnBattleModeSelection = (_Ctx->turnBattleMode == MODE_CLASSIC) ? 0 : 1;
     }
 }
 
