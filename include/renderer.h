@@ -70,7 +70,7 @@ void Renderer_DrawBrightnessOverlay(Renderer *_Renderer, float _Brightness);
 void Renderer_DrawHudBorderWithScore(Renderer *_Renderer, int _Score);
 
 /* Draw HUD border with combo */
-void Renderer_DrawHudBorderWithCombo(Renderer *_Renderer, int _Score, int _Combo, float _Multiplier, GameMode _GameMode, bool _ComboEffects);
+void Renderer_DrawHudBorderWithCombo(Renderer *_Renderer, int _Score, int _Combo, float _Multiplier, GameMode _GameMode, bool _ComboEffects, int _Level, int _XP, int _XPToNextLevel);
 
 /* Draw walls around playfield */
 void Renderer_DrawWalls(Renderer *_Renderer);

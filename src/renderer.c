@@ -490,7 +490,7 @@ void Renderer_DrawHudBorderWithScore(Renderer *_Renderer, int _Score)
     }
 }
 
-void Renderer_DrawHudBorderWithCombo(Renderer *_Renderer, int _Score, int _Combo, float _Multiplier, GameMode _GameMode, bool _ComboEffects)
+void Renderer_DrawHudBorderWithCombo(Renderer *_Renderer, int _Score, int _Combo, float _Multiplier, GameMode _GameMode, bool _ComboEffects, int _Level, int _XP, int _XPToNextLevel)
 {
     if (!_Renderer || !_Renderer->sdlRenderer)
         return;
@@ -502,8 +502,15 @@ void Renderer_DrawHudBorderWithCombo(Renderer *_Renderer, int _Score, int _Combo
     drawHudWithPulse(_Renderer, _Combo, _Multiplier, isPowerUpMode, _ComboEffects);
 
     /* Draw SCORE text in the top HUD border */
-    char scoreText[32];
-    snprintf(scoreText, sizeof(scoreText), "SCORE: %d", _Score);
+    char scoreText[64];
+    if (isPowerUpMode)
+    {
+        snprintf(scoreText, sizeof(scoreText), "SCORE: %d   LEVEL %d", _Score, _Level);
+    }
+    else
+    {
+        snprintf(scoreText, sizeof(scoreText), "SCORE: %d", _Score);
+    }
 
     SDL_Color white = {255, 255, 255, 255};
     SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontSmall, scoreText, white);
@@ -525,8 +532,57 @@ void Renderer_DrawHudBorderWithCombo(Renderer *_Renderer, int _Score, int _Combo
         SDL_FreeSurface(surface);
     }
 
-    /* Draw combo/multiplier info at the bottom */
-    if (_Combo > 0)
+    /* Draw combo/multiplier info or XP bar at the bottom */
+    if (isPowerUpMode)
+    {
+        // Draw XP bar
+        int barWidth = 300;
+        int barHeight = 16;
+        int barX = WINDOW_WIDTH / 2 - barWidth / 2;
+        int barY = WINDOW_HEIGHT - borderThickness + (borderThickness - barHeight) / 2;
+
+        // Background
+        SDL_SetRenderDrawBlendMode(_Renderer->sdlRenderer, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 40, 40, 40, 200);
+        SDL_Rect bgRect = {barX, barY, barWidth, barHeight};
+        SDL_RenderFillRect(_Renderer->sdlRenderer, &bgRect);
+
+        // XP fill (cyan/blue gradient)
+        float xpPercent = (float)_XP / (float)_XPToNextLevel;
+        if (xpPercent > 1.0f) xpPercent = 1.0f;
+        int fillWidth = (int)(barWidth * xpPercent);
+
+        SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 0, 200, 255, 255);
+        SDL_Rect fillRect = {barX, barY, fillWidth, barHeight};
+        SDL_RenderFillRect(_Renderer->sdlRenderer, &fillRect);
+
+        // Border
+        SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 100, 220, 255, 255);
+        SDL_RenderDrawRect(_Renderer->sdlRenderer, &bgRect);
+
+        // XP text
+        char xpText[32];
+        snprintf(xpText, sizeof(xpText), "%d / %d XP", _XP, _XPToNextLevel);
+        SDL_Color cyanColor = {100, 220, 255, 255};
+        SDL_Surface *xpSurface = TTF_RenderText_Solid(_Renderer->fontSmall, xpText, cyanColor);
+        if (xpSurface)
+        {
+            SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, xpSurface);
+            if (texture)
+            {
+                SDL_Rect textDest = {
+                    WINDOW_WIDTH / 2 - xpSurface->w / 2,
+                    barY + (barHeight - xpSurface->h) / 2,
+                    xpSurface->w,
+                    xpSurface->h
+                };
+                SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &textDest);
+                SDL_DestroyTexture(texture);
+            }
+            SDL_FreeSurface(xpSurface);
+        }
+    }
+    else if (_Combo > 0)
     {
         char comboText[64];
         snprintf(comboText, sizeof(comboText), "COMBO x%d   %.1fx MULTIPLIER", _Combo, _Multiplier);
@@ -3007,7 +3063,73 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
         // Draw HUD border with score (not in pause state)
         if (_Game->state != GAME_PAUSED)
         {
-            Renderer_DrawHudBorderWithCombo(_Renderer, _Game->snake.score, _Game->comboCount, _Game->comboMultiplier, _Game->gameMode, _Game->settings.comboEffects);
+            Renderer_DrawHudBorderWithCombo(_Renderer, _Game->snake.score, _Game->comboCount, _Game->comboMultiplier, _Game->gameMode, _Game->settings.comboEffects, _Game->level, _Game->xp, _Game->xpToNextLevel);
+        }
+
+        // Draw level-up effect (Power-Up mode only)
+        if (_Game->levelUpActive && _Game->gameMode == MODE_POWERUP)
+        {
+            unsigned int elapsed = _CurrentTime - _Game->levelUpStartTime;
+            const unsigned int effectDuration = 2000; // 2 seconds
+
+            if (elapsed < effectDuration)
+            {
+                // Flash overlay
+                int flashAlpha = 0;
+                if (elapsed < 200) // Initial bright flash
+                {
+                    flashAlpha = 200 - (elapsed * 200 / 200);
+                }
+                else if (elapsed % 400 < 200) // Pulsing after
+                {
+                    flashAlpha = 80;
+                }
+
+                if (flashAlpha > 0)
+                {
+                    SDL_SetRenderDrawBlendMode(_Renderer->sdlRenderer, SDL_BLENDMODE_BLEND);
+                    SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 0, 220, 255, flashAlpha);
+                    SDL_Rect flashRect = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
+                    SDL_RenderFillRect(_Renderer->sdlRenderer, &flashRect);
+                }
+
+                // "LEVEL UP!" text with zoom and fade
+                float progress = (float)elapsed / (float)effectDuration;
+                float scale = 2.0f - progress; // Start big, shrink to 1.0
+                int alpha = (int)(255 * (1.0f - progress)); // Fade out
+
+                char levelText[32];
+                snprintf(levelText, sizeof(levelText), "LEVEL %d!", _Game->level);
+
+                SDL_Color cyan = {100, 220, 255, (Uint8)alpha};
+                SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontLarge, levelText, cyan);
+                if (surface)
+                {
+                    SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, surface);
+                    if (texture)
+                    {
+                        SDL_SetTextureAlphaMod(texture, alpha);
+
+                        int w = (int)(surface->w * scale);
+                        int h = (int)(surface->h * scale);
+
+                        SDL_Rect dest = {
+                            WINDOW_WIDTH / 2 - w / 2,
+                            WINDOW_HEIGHT / 2 - h / 2,
+                            w,
+                            h
+                        };
+                        SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+                        SDL_DestroyTexture(texture);
+                    }
+                    SDL_FreeSurface(surface);
+                }
+            }
+            else
+            {
+                // Effect finished
+                _Game->levelUpActive = false;
+            }
         }
     }
     else if (_Game->state == GAME_MULTIPLAYER && _MpCtx)
