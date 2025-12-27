@@ -8,7 +8,7 @@
 #include "../src/mpapi/c_client/libs/jansson/jansson.h"
 #include <stdbool.h>
 
-#define MAX_MULTIPLAYER_PLAYERS 2  // 1v1 only
+#define MAX_MULTIPLAYER_PLAYERS 10  // Up to 10 players for turn battle
 #define MAX_BROWSEABLE_GAMES 10
 
 // Menu options
@@ -47,7 +47,7 @@ typedef enum {
 // Browseable game info
 typedef struct {
     char sessionId[8];
-    char name[64];
+    char name[16];
     int playerCount;
     int maxPlayers;
     int mapId;  // Background/map index
@@ -134,11 +134,13 @@ typedef struct {
     int chatCount;
     char chatInput[128];
     int chatInputLen;
+    bool skipNextChatChar;       // Skip 'c' when chat first opens
     MultiplayerState previousState;  // State to return to after chat/nick change
 
     // Nick change
     char nickInput[32];
     int nickInputLen;
+    bool skipNextNickChar;       // Skip 'n' when nick change first opens
 
     // Turn battle mode
     MultiplayerGameMode gameMode;

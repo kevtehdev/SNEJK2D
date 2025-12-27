@@ -66,8 +66,8 @@ void Renderer_DrawBackgroundOverlay(Renderer *_Renderer);
 /* Draw brightness overlay */
 void Renderer_DrawBrightnessOverlay(Renderer *_Renderer, float _Brightness);
 
-/* Draw HUD border with score */
-void Renderer_DrawHudBorderWithScore(Renderer *_Renderer, int _Score);
+/* Draw HUD border with score or attempt counter */
+void Renderer_DrawHudBorderWithScore(Renderer *_Renderer, int _Score, int _Attempt, bool _ShowAttempt);
 
 /* Draw HUD border with combo */
 void Renderer_DrawHudBorderWithCombo(Renderer *_Renderer, int _Score, int _Combo, float _Multiplier, GameMode _GameMode, bool _ComboEffects, int _Level, int _XP, int _XPToNextLevel);
@@ -98,6 +98,9 @@ void Renderer_DrawMenu(Renderer *_Renderer, int _SelectedBg);
 
 /* Draw name input screen */
 void Renderer_DrawNameInput(Renderer *_Renderer, Game *_Game, unsigned int _Tick);
+
+/* Draw retro loading screen */
+void Renderer_DrawLoadingScreen(Renderer *_Renderer, float _Progress, unsigned int _CurrentTime);
 
 /* Draw main menu */
 void Renderer_DrawMainMenu(Renderer *_Renderer, int _Selection);

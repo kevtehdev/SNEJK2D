@@ -33,15 +33,22 @@ rm -rf release_tmp
 
 echo "✓ Linux package created: snejk2d-$VERSION-linux.tar.gz"
 
-# Build Windows version
+# Build Windows version (using pre-built binaries from release directory)
 echo ""
 echo "Building Windows version..."
-./build_windows.sh
+echo "Using pre-built Windows binaries from release/SNEJK2D/"
+
+# Check if Windows binaries exist
+if [ ! -f "release/SNEJK2D/SNEJK2D.exe" ]; then
+    echo "ERROR: Windows binaries not found in release/SNEJK2D/"
+    echo "Please build Windows version manually and place in release/SNEJK2D/"
+    exit 1
+fi
 
 # Create Windows release directory
 mkdir -p release_tmp/snejk2d-$VERSION-windows
-cp snejk2d.exe release_tmp/snejk2d-$VERSION-windows/
-cp *.dll release_tmp/snejk2d-$VERSION-windows/
+cp release/SNEJK2D/SNEJK2D.exe release_tmp/snejk2d-$VERSION-windows/snejk2d.exe
+cp release/SNEJK2D/*.dll release_tmp/snejk2d-$VERSION-windows/
 cp -r assets release_tmp/snejk2d-$VERSION-windows/
 cp README.md release_tmp/snejk2d-$VERSION-windows/
 

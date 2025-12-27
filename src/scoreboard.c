@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <jansson.h>
+#include "../src/mpapi/c_client/libs/jansson/jansson.h"
 
 #define SCOREBOARD_FILE "scoreboard.json"
 
@@ -59,8 +59,8 @@ bool Scoreboard_Load(Scoreboard *_Scoreboard)
         if (json_is_integer(scoreJson) && json_is_string(nameJson))
         {
             _Scoreboard->entries[i].score = json_integer_value(scoreJson);
-            strncpy(_Scoreboard->entries[i].name, json_string_value(nameJson), 31);
-            _Scoreboard->entries[i].name[31] = '\0';
+            strncpy(_Scoreboard->entries[i].name, json_string_value(nameJson), 15);
+            _Scoreboard->entries[i].name[15] = '\0';
 
             if (json_is_integer(timestampJson))
                 _Scoreboard->entries[i].timestamp = json_integer_value(timestampJson);
@@ -143,8 +143,8 @@ bool Scoreboard_AddScore(Scoreboard *_Scoreboard, int _Score, const char *_Name)
 
     // Insert new entry
     _Scoreboard->entries[insertPos].score = _Score;
-    strncpy(_Scoreboard->entries[insertPos].name, _Name, 31);
-    _Scoreboard->entries[insertPos].name[31] = '\0';
+    strncpy(_Scoreboard->entries[insertPos].name, _Name, 15);
+    _Scoreboard->entries[insertPos].name[15] = '\0';
     _Scoreboard->entries[insertPos].timestamp = (unsigned int)time(NULL);
 
     if (_Scoreboard->count < MAX_SCOREBOARD_ENTRIES)

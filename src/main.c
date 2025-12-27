@@ -54,6 +54,10 @@ int main(int argc, char *argv[])
             {
                 game.running = false;
             }
+            else if (game.state == GAME_LOADING)
+            {
+                // No input during loading screen - just wait
+            }
             else if (game.state == GAME_MAIN_MENU)
             {
                 Input_HandleMainMenuInput(&game, &event, &mpCtx, &audio);
@@ -74,7 +78,19 @@ int main(int argc, char *argv[])
         }
 
         // Update game logic
-        if (game.state == GAME_PLAYING)
+        if (game.state == GAME_LOADING)
+        {
+            // Update loading progress (simulate 2.5 second loading time)
+            unsigned int elapsed = currentTime - game.loadingStartTime;
+            game.loadingProgress = (float)elapsed / 2500.0f;
+
+            if (game.loadingProgress >= 1.0f)
+            {
+                game.loadingProgress = 1.0f;
+                game.state = GAME_MAIN_MENU;
+            }
+        }
+        else if (game.state == GAME_PLAYING)
         {
             Game_Update(&game);
         }
@@ -132,7 +148,7 @@ int main(int argc, char *argv[])
         // Render everything
         Renderer_DrawFrame(&renderer, &game, mpCtx, &scoreboard, currentTime, g_main_menu_selection, &audio);
 
-        SDL_Delay(16);  // ~60 FPS
+        SDL_Delay(16); // ~60 FPS
     }
 
     // Cleanup

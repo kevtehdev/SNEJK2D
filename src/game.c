@@ -8,7 +8,9 @@ void Game_Init(Game *_Game)
 {
     srand(time(NULL));
 
-    _Game->state = GAME_MAIN_MENU;  // Start at main menu
+    _Game->state = GAME_LOADING;  // Start with retro loading screen
+    _Game->loadingStartTime = SDL_GetTicks();
+    _Game->loadingProgress = 0.0f;
     _Game->gameMode = MODE_CLASSIC;  // Default to classic mode
     _Game->modeSelection = 0;        // 0 = Classic
     _Game->selectedBackground = 0;   // Cyberpunk Street

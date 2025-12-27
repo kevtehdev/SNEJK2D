@@ -3,7 +3,8 @@
 
 #include <stdbool.h>
 
-typedef enum {
+typedef enum
+{
     SOUND_EAT,
     SOUND_DEATH,
     SOUND_MENU_SELECT,
@@ -12,14 +13,15 @@ typedef enum {
     SOUND_COUNT
 } SoundType;
 
-typedef struct {
+typedef struct
+{
     void *audioDevice;
     void *sounds[SOUND_COUNT];
     void *menuMusic;
     void *singleplayerMusic;
     void *multiplayerMusic;
-    void *currentMusic;  // Track currently playing music
-    int nextChannel;     // Channel rotation counter for sound effects
+    void *currentMusic; // Track currently playing music
+    int nextChannel;    // Channel rotation counter for sound effects
     bool initialized;
     bool musicEnabled;
     bool sfxEnabled;
