@@ -1926,8 +1926,40 @@ void Renderer_DrawMultiplayerLobby(Renderer *_Renderer, MultiplayerContext *_MpC
         SDL_FreeSurface(mode_surface);
     }
 
+    // Turn Battle mode selection (Classic vs Power-Up) - only for Turn Battle
+    if (_MpCtx->gameMode == MP_MODE_TURN_BATTLE)
+    {
+        const char *tb_mode_names[] = {"CLASSIC", "POWER-UP"};
+        char tb_mode_text[64];
+
+        if (_MpCtx->isHost)
+        {
+            // Host can change - show < > arrows
+            snprintf(tb_mode_text, sizeof(tb_mode_text), "< %s >", tb_mode_names[_MpCtx->turnBattleModeSelection]);
+        }
+        else
+        {
+            // Client just sees current mode
+            snprintf(tb_mode_text, sizeof(tb_mode_text), "%s", tb_mode_names[_MpCtx->turnBattleModeSelection]);
+        }
+
+        SDL_Color cyan = {100, 220, 255, 255};
+        SDL_Surface *tb_mode_surface = TTF_RenderText_Solid(_Renderer->fontSmall, tb_mode_text, cyan);
+        if (tb_mode_surface)
+        {
+            SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, tb_mode_surface);
+            if (texture)
+            {
+                SDL_Rect dest = {WINDOW_WIDTH / 2 - tb_mode_surface->w / 2, _MpCtx->isHost ? 205 : 170, tb_mode_surface->w, tb_mode_surface->h};
+                SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+                SDL_DestroyTexture(texture);
+            }
+            SDL_FreeSurface(tb_mode_surface);
+        }
+    }
+
     // Player list - only show players who have joined
-    int y_offset = _MpCtx->isHost ? 220 : 185;
+    int y_offset = _MpCtx->isHost ? 245 : 210;
     for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
     {
         // Skip players who haven't joined
@@ -1992,7 +2024,19 @@ void Renderer_DrawMultiplayerLobby(Renderer *_Renderer, MultiplayerContext *_MpC
     }
 
     // Instructions
-    const char *inst_text = _MpCtx->isHost ? "SPACE READY   ENTER START   C CHAT   N NICK" : "SPACE READY   C CHAT   N NICK";
+    const char *inst_text;
+    if (_MpCtx->isHost && _MpCtx->gameMode == MP_MODE_TURN_BATTLE)
+    {
+        inst_text = "ARROWS MODE   SPACE READY   ENTER START   C CHAT   N NICK";
+    }
+    else if (_MpCtx->isHost)
+    {
+        inst_text = "SPACE READY   ENTER START   C CHAT   N NICK";
+    }
+    else
+    {
+        inst_text = "SPACE READY   C CHAT   N NICK";
+    }
 
     SDL_Surface *inst_surface = TTF_RenderText_Solid(_Renderer->fontSmall, inst_text, white);
     if (inst_surface)

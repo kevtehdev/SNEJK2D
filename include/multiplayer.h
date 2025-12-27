@@ -145,6 +145,8 @@ typedef struct {
     // Turn battle mode
     MultiplayerGameMode gameMode;
     int modeSelection;           // 0 = Realtime, 1 = Turn Battle
+    GameMode turnBattleMode;     // For Turn Battle: MODE_CLASSIC or MODE_POWERUP
+    int turnBattleModeSelection; // 0 = Classic, 1 = Power-Up
     int currentAttempt;          // Current attempt number (0-2)
     unsigned int attemptStartTime;
     Game localGame;              // Local game instance for turn battle

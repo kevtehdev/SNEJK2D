@@ -570,6 +570,32 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
                     _MpCtx->nickInputLen = strlen(_MpCtx->nickInput);
                 }
                 break;
+            case SDLK_LEFT:
+            case SDLK_RIGHT:
+                // Host can change turn battle mode (Classic vs Power-Up) in Turn Battle
+                if (_MpCtx->isHost && _MpCtx->gameMode == MP_MODE_TURN_BATTLE)
+                {
+                    if (_Event->key.keysym.sym == SDLK_LEFT)
+                    {
+                        _MpCtx->turnBattleModeSelection = (_MpCtx->turnBattleModeSelection == 0) ? 1 : 0;
+                    }
+                    else
+                    {
+                        _MpCtx->turnBattleModeSelection = (_MpCtx->turnBattleModeSelection == 0) ? 1 : 0;
+                    }
+                    _MpCtx->turnBattleMode = (_MpCtx->turnBattleModeSelection == 0) ? MODE_CLASSIC : MODE_POWERUP;
+
+                    // Broadcast the mode change to all clients
+                    if (_MpCtx->api)
+                    {
+                        json_t *message = json_object();
+                        json_object_set_new(message, "type", json_string("turn_battle_mode_changed"));
+                        json_object_set_new(message, "mode", json_integer(_MpCtx->turnBattleMode));
+                        mpapi_game(_MpCtx->api, message, NULL);
+                        json_decref(message);
+                    }
+                }
+                break;
             case SDLK_SPACE:
                 Multiplayer_ToggleReady(_MpCtx);
                 break;
