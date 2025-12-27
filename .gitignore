@@ -32,7 +32,7 @@ release/
 *.zip
 
 # Assets (included in releases, not in repo)
-assets/
+
 
 # Scoreboard data
 scoreboard.json
