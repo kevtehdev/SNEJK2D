@@ -2012,11 +2012,7 @@ void Renderer_DrawMultiplayerLobby(Renderer *_Renderer, MultiplayerContext *_MpC
 
     // Instructions
     const char *inst_text;
-    if (_MpCtx->isHost && _MpCtx->gameMode == MP_MODE_TURN_BATTLE)
-    {
-        inst_text = "ARROWS MODE   SPACE READY   ENTER START   C CHAT   N NICK";
-    }
-    else if (_MpCtx->isHost)
+    if (_MpCtx->isHost)
     {
         inst_text = "SPACE READY   ENTER START   C CHAT   N NICK";
     }
