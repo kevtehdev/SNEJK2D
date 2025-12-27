@@ -4,29 +4,33 @@
 #include "config.h"
 #include <stdbool.h>
 
-typedef enum {
+typedef enum
+{
     DIR_UP,
     DIR_DOWN,
     DIR_LEFT,
     DIR_RIGHT
 } Direction;
 
-typedef struct {
+typedef struct
+{
     int x;
     int y;
 } Position;
 
 /* Input buffer for smoother controls (allows buffering 2 inputs) */
-typedef struct {
+typedef struct
+{
     Direction buffer[2];
     int count;
 } InputBuffer;
 
-typedef struct {
-    Position segments[GRID_WIDTH * GRID_HEIGHT];  /* Max possible length */
+typedef struct
+{
+    Position segments[GRID_WIDTH * GRID_HEIGHT]; /* Max possible length */
     int length;
     Direction direction;
-    Direction nextDirection;  /* Queued direction for next move */
+    Direction nextDirection; /* Queued direction for next move */
     bool alive;
     int score;
     InputBuffer inputBuffer;

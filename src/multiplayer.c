@@ -457,7 +457,7 @@ static void mpapiEventCallback(const char *event, int64_t messageId, const char 
                 if (ctx->isHost && Multiplayer_AllTurnsFinished(ctx))
                 {
                     Multiplayer_CalculateTurnWinner(ctx);
-                    ctx->resultPageIndex = 0;  // Start at winner
+                    ctx->resultPageIndex = 0; // Start at winner
                     ctx->state = MP_STATE_TURN_RESULTS;
 
                     // Broadcast results state to all players
@@ -471,7 +471,7 @@ static void mpapiEventCallback(const char *event, int64_t messageId, const char 
         else if (strcmp(msgType, "show_results") == 0)
         {
             // Host is telling us to show results
-            ctx->resultPageIndex = 0;  // Start at winner
+            ctx->resultPageIndex = 0; // Start at winner
             ctx->state = MP_STATE_TURN_RESULTS;
             Multiplayer_CalculateTurnWinner(ctx);
         }
@@ -516,7 +516,7 @@ static void mpapiEventCallback(const char *event, int64_t messageId, const char 
 }
 
 // Create multiplayer context
-MultiplayerContext* Multiplayer_Create(void)
+MultiplayerContext *Multiplayer_Create(void)
 {
     MultiplayerContext *ctx = calloc(1, sizeof(MultiplayerContext));
     if (!ctx)
@@ -547,7 +547,7 @@ MultiplayerContext* Multiplayer_Create(void)
     ctx->localPlayerIndex = -1;
     ctx->currentSpeed = BASE_SPEED;
     ctx->listenerId = -1;
-    ctx->audio = NULL;  // Will be set by caller
+    ctx->audio = NULL; // Will be set by caller
     ctx->menuSelection = 0;
     ctx->sessionInputLen = 0;
     memset(ctx->sessionInput, 0, sizeof(ctx->sessionInput));
@@ -555,21 +555,23 @@ MultiplayerContext* Multiplayer_Create(void)
     memset(ctx->roomName, 0, sizeof(ctx->roomName));
     ctx->browsedGameCount = 0;
     ctx->selectedGameIndex = 0;
-    ctx->selectedBackground = 0;  // Default to first map (de_cyberpunk)
+    ctx->selectedBackground = 0; // Default to first map (de_cyberpunk)
     ctx->gameOverSelection = 0;  // Default to "Try Again"
 
     // Initialize chat
     ctx->chatCount = 0;
     ctx->chatInputLen = 0;
+    ctx->skipNextChatChar = false;
     memset(ctx->chatInput, 0, sizeof(ctx->chatInput));
     ctx->previousState = MP_STATE_LOBBY;
 
     // Initialize nick change
     ctx->nickInputLen = 0;
+    ctx->skipNextNickChar = false;
     memset(ctx->nickInput, 0, sizeof(ctx->nickInput));
 
     // Initialize turn battle
-    ctx->gameMode = MP_MODE_TURN_BATTLE;  // Default to turn battle
+    ctx->gameMode = MP_MODE_TURN_BATTLE; // Default to turn battle
     ctx->modeSelection = 0;
     ctx->currentAttempt = 0;
     ctx->attemptStartTime = 0;
@@ -628,8 +630,8 @@ int Multiplayer_Host(MultiplayerContext *_Ctx, const char *_PlayerName)
 
     json_t *hostData = json_object();
     json_object_set_new(hostData, "name", json_string(nameWithId));
-    json_object_set_new(hostData, "maxPlayers", json_integer(2));  // 1v1 game
-    json_object_set_new(hostData, "map", json_integer(_Ctx->selectedBackground));  // Include map ID
+    json_object_set_new(hostData, "maxPlayers", json_integer(2));                 // 1v1 game
+    json_object_set_new(hostData, "map", json_integer(_Ctx->selectedBackground)); // Include map ID
 
     char *sessionId = NULL;
     char *clientId = NULL;
@@ -670,7 +672,7 @@ int Multiplayer_Host(MultiplayerContext *_Ctx, const char *_PlayerName)
     // Host auto-joins as player 0
     _Ctx->players[0].joined = true;
     _Ctx->players[0].isLocal = true;
-    _Ctx->players[0].ready = false;  // Explicitly set ready to false
+    _Ctx->players[0].ready = false; // Explicitly set ready to false
     strncpy(_Ctx->players[0].clientId, _Ctx->ourClientId, sizeof(_Ctx->players[0].clientId) - 1);
     _Ctx->players[0].clientId[sizeof(_Ctx->players[0].clientId) - 1] = '\0';
     strncpy(_Ctx->players[0].name, _PlayerName, sizeof(_Ctx->players[0].name) - 1);
@@ -686,7 +688,7 @@ int Multiplayer_Host(MultiplayerContext *_Ctx, const char *_PlayerName)
         _Ctx->players[0].snake.segments[i].x = _Ctx->players[0].snake.segments[0].x - i;
         _Ctx->players[0].snake.segments[i].y = _Ctx->players[0].snake.segments[0].y;
     }
-    _Ctx->players[0].alive = false;  // Not alive until game starts
+    _Ctx->players[0].alive = false; // Not alive until game starts
 
     _Ctx->state = MP_STATE_LOBBY;
     printf("Session created: %s\n", _Ctx->sessionId);
@@ -723,7 +725,7 @@ int Multiplayer_Join(MultiplayerContext *_Ctx, const char *_SessionId, const cha
 
     char *returnedSession = NULL;
     char *clientId = NULL;
-    json_t *joinResponse = NULL;  // Get full response to parse existing clients
+    json_t *joinResponse = NULL; // Get full response to parse existing clients
 
     int rc = mpapi_join(_Ctx->api, _SessionId, joinData, &returnedSession, &clientId, &joinResponse);
     json_decref(joinData);
@@ -891,7 +893,7 @@ void Multiplayer_HostUpdate(MultiplayerContext *_Ctx, unsigned int _CurrentTime)
 
             // Check if next position would collide with wall
             bool wouldHitWall = (nextHead.x < PLAYABLE_MIN_X || nextHead.x > PLAYABLE_MAX_X ||
-                                   nextHead.y < PLAYABLE_MIN_Y || nextHead.y > PLAYABLE_MAX_Y);
+                                 nextHead.y < PLAYABLE_MIN_Y || nextHead.y > PLAYABLE_MAX_Y);
 
             // Check if next position would collide with self
             bool wouldHitSelf = false;
@@ -1011,18 +1013,18 @@ void Multiplayer_HostUpdate(MultiplayerContext *_Ctx, unsigned int _CurrentTime)
                     if (_Ctx->currentSpeed < MIN_SPEED)
                         _Ctx->currentSpeed = MIN_SPEED;
 
-                    break;  // Only eat one food per frame
+                    break; // Only eat one food per frame
                 }
             }
 
             // Check combo timeout (dynamic based on speed)
             if (_Ctx->players[i].comboCount > 0 && _Ctx->players[i].lastFoodTime > 0)
             {
-                unsigned int dynamicTimeout = _Ctx->currentSpeed * 30;  // Base scaling
+                unsigned int dynamicTimeout = _Ctx->currentSpeed * 30; // Base scaling
                 if (dynamicTimeout < COMBO_TIMEOUT_MIN)
-                    dynamicTimeout = COMBO_TIMEOUT_MIN;  // Never shorter than min
+                    dynamicTimeout = COMBO_TIMEOUT_MIN; // Never shorter than min
                 if (dynamicTimeout > COMBO_TIMEOUT_MAX)
-                    dynamicTimeout = COMBO_TIMEOUT_MAX;  // Never longer than max
+                    dynamicTimeout = COMBO_TIMEOUT_MAX; // Never longer than max
 
                 if (_CurrentTime - _Ctx->players[i].lastFoodTime >= dynamicTimeout)
                 {
@@ -1269,6 +1271,15 @@ void Multiplayer_UpdateCountdown(MultiplayerContext *_Ctx, unsigned int _Current
     // Check if countdown finished
     if (_CurrentTime >= _Ctx->gameStartTime)
     {
+        // For turn battle, go to TURN_PLAYING state
+        if (_Ctx->gameMode == MP_MODE_TURN_BATTLE)
+        {
+            _Ctx->state = MP_STATE_TURN_PLAYING;
+            printf("Countdown finished - starting turn battle attempt\n");
+            return;
+        }
+
+        // For 1VS1 mode, go to PLAYING state
         _Ctx->state = MP_STATE_PLAYING;
         _Ctx->lastMoveTime = _CurrentTime;
 
@@ -1317,7 +1328,7 @@ void Multiplayer_UpdateCountdown(MultiplayerContext *_Ctx, unsigned int _Current
 }
 
 // Serialize state to JSON
-json_t* Multiplayer_SerializeState(MultiplayerContext *_Ctx)
+json_t *Multiplayer_SerializeState(MultiplayerContext *_Ctx)
 {
     if (!_Ctx)
         return NULL;
@@ -1560,21 +1571,21 @@ int Multiplayer_BrowseGames(MultiplayerContext *_Ctx)
             {
                 const char *session_id = json_string_value(idObj);
                 strncpy(_Ctx->browsedGames[_Ctx->browsedGameCount].sessionId,
-                       session_id,
-                       sizeof(_Ctx->browsedGames[_Ctx->browsedGameCount].sessionId) - 1);
+                        session_id,
+                        sizeof(_Ctx->browsedGames[_Ctx->browsedGameCount].sessionId) - 1);
             }
             else
             {
-                continue;  // Skip if no ID
+                continue; // Skip if no ID
             }
 
             // Parse map ID from name format: "[67] roomname |m2| |gRT|"
-            int mapId = 0;  // Default
+            int mapId = 0; // Default
             const char *mapMarker = strstr(name, "|m");
             if (mapMarker)
             {
                 // Found map marker, extract the number
-                int parsedMapId = atoi(mapMarker + 2);  // Skip "|m"
+                int parsedMapId = atoi(mapMarker + 2); // Skip "|m"
                 if (parsedMapId >= 0 && parsedMapId < 5)
                 {
                     mapId = parsedMapId;
@@ -1598,7 +1609,7 @@ int Multiplayer_BrowseGames(MultiplayerContext *_Ctx)
             _Ctx->browsedGames[_Ctx->browsedGameCount].mapId = mapId;
 
             // Parse game mode from name format: "|g1V|" or "|gTB|"
-            MultiplayerGameMode gameMode = MP_MODE_1VS1;  // Default
+            MultiplayerGameMode gameMode = MP_MODE_1VS1; // Default
             const char *modeMarker = strstr(name, "|g");
             if (modeMarker)
             {
@@ -1631,7 +1642,7 @@ int Multiplayer_BrowseGames(MultiplayerContext *_Ctx)
                 strncpy(cleanName, name, len);
                 cleanName[len] = '\0';
                 // Trim trailing space
-                while (len > 0 && cleanName[len-1] == ' ')
+                while (len > 0 && cleanName[len - 1] == ' ')
                 {
                     cleanName[--len] = '\0';
                 }
@@ -1643,8 +1654,8 @@ int Multiplayer_BrowseGames(MultiplayerContext *_Ctx)
             }
 
             strncpy(_Ctx->browsedGames[_Ctx->browsedGameCount].name,
-                   cleanName,
-                   sizeof(_Ctx->browsedGames[_Ctx->browsedGameCount].name) - 1);
+                    cleanName,
+                    sizeof(_Ctx->browsedGames[_Ctx->browsedGameCount].name) - 1);
 
             // Extract player count
             json_t *playersObj = json_object_get(game, "clients");
@@ -1684,10 +1695,14 @@ void Multiplayer_StartTurnAttempt(MultiplayerContext *_Ctx)
     Game_Init(&_Ctx->localGame);
     _Ctx->localGame.state = GAME_PLAYING;
     _Ctx->localGame.selectedBackground = _Ctx->selectedBackground;
-    _Ctx->attemptStartTime = SDL_GetTicks();
-    _Ctx->state = MP_STATE_TURN_PLAYING;
 
-    printf("Starting turn attempt %d/3\n", _Ctx->currentAttempt + 1);
+    // Start with countdown (same as 1VS1 mode)
+    _Ctx->state = MP_STATE_COUNTDOWN;
+    _Ctx->countdownStart = SDL_GetTicks();
+    _Ctx->gameStartTime = _Ctx->countdownStart + 3000; // 3 second countdown
+    _Ctx->attemptStartTime = _Ctx->gameStartTime; // Attempt starts after countdown
+
+    printf("Starting turn attempt %d/3 with countdown\n", _Ctx->currentAttempt + 1);
 }
 
 void Multiplayer_FinishTurnAttempt(MultiplayerContext *_Ctx)
@@ -1732,7 +1747,7 @@ void Multiplayer_FinishTurnAttempt(MultiplayerContext *_Ctx)
         if (_Ctx->isHost && Multiplayer_AllTurnsFinished(_Ctx))
         {
             Multiplayer_CalculateTurnWinner(_Ctx);
-            _Ctx->resultPageIndex = 0;  // Start at winner
+            _Ctx->resultPageIndex = 0; // Start at winner
             _Ctx->state = MP_STATE_TURN_RESULTS;
 
             // Broadcast results state to all players

@@ -25,8 +25,7 @@ bool Renderer_Init(Renderer *_Renderer)
         SDL_WINDOWPOS_CENTERED,
         WINDOW_WIDTH,
         WINDOW_HEIGHT,
-        SDL_WINDOW_SHOWN
-    );
+        SDL_WINDOW_SHOWN | SDL_WINDOW_BORDERLESS);
 
     if (!_Renderer->window)
     {
@@ -38,8 +37,7 @@ bool Renderer_Init(Renderer *_Renderer)
     _Renderer->sdlRenderer = SDL_CreateRenderer(
         _Renderer->window,
         -1,
-        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
-    );
+        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
     if (!_Renderer->sdlRenderer)
     {
@@ -210,16 +208,23 @@ void Renderer_Cleanup(Renderer *_Renderer)
     /* Cleanup medals */
     for (int i = 0; i < MEDAL_FRAMES; i++)
     {
-        if (_Renderer->medalPlatinum[i]) SDL_DestroyTexture(_Renderer->medalPlatinum[i]);
-        if (_Renderer->medalGold[i]) SDL_DestroyTexture(_Renderer->medalGold[i]);
-        if (_Renderer->medalSilver[i]) SDL_DestroyTexture(_Renderer->medalSilver[i]);
-        if (_Renderer->medalBronze[i]) SDL_DestroyTexture(_Renderer->medalBronze[i]);
+        if (_Renderer->medalPlatinum[i])
+            SDL_DestroyTexture(_Renderer->medalPlatinum[i]);
+        if (_Renderer->medalGold[i])
+            SDL_DestroyTexture(_Renderer->medalGold[i]);
+        if (_Renderer->medalSilver[i])
+            SDL_DestroyTexture(_Renderer->medalSilver[i]);
+        if (_Renderer->medalBronze[i])
+            SDL_DestroyTexture(_Renderer->medalBronze[i]);
     }
 
     /* Cleanup fonts */
-    if (_Renderer->fontLarge) TTF_CloseFont(_Renderer->fontLarge);
-    if (_Renderer->fontMedium) TTF_CloseFont(_Renderer->fontMedium);
-    if (_Renderer->fontSmall) TTF_CloseFont(_Renderer->fontSmall);
+    if (_Renderer->fontLarge)
+        TTF_CloseFont(_Renderer->fontLarge);
+    if (_Renderer->fontMedium)
+        TTF_CloseFont(_Renderer->fontMedium);
+    if (_Renderer->fontSmall)
+        TTF_CloseFont(_Renderer->fontSmall);
 
     TTF_Quit();
     IMG_Quit();
@@ -253,7 +258,7 @@ void Renderer_Present(Renderer *_Renderer)
 /* Draw parallax background */
 void Renderer_DrawBackground(Renderer *_Renderer, unsigned int _Tick)
 {
-    (void)_Tick;  /* Reserved for future time-based animation */
+    (void)_Tick; /* Reserved for future time-based animation */
 
     /* Safety check for background index */
     if (_Renderer->currentBackground >= NUM_BACKGROUNDS)
@@ -262,7 +267,7 @@ void Renderer_DrawBackground(Renderer *_Renderer, unsigned int _Tick)
     ParallaxBackground *bg = &_Renderer->backgrounds[_Renderer->currentBackground];
 
     /* Update scroll offset based on time */
-    bg->scrollOffset += 0.5f;  /* Slow scroll speed */
+    bg->scrollOffset += 0.5f; /* Slow scroll speed */
 
     for (int i = 0; i < bg->numLayers; i++)
     {
@@ -327,15 +332,15 @@ void Renderer_DrawBrightnessOverlay(Renderer *_Renderer, float _Brightness)
     if (_Brightness > 1.0f)
     {
         // Brighten with white overlay
-        float intensity = (_Brightness - 1.0f) / 1.0f;  // 0.0 to 1.0
-        int alpha = (int)(intensity * 200);  // Max 200 alpha for white
+        float intensity = (_Brightness - 1.0f) / 1.0f; // 0.0 to 1.0
+        int alpha = (int)(intensity * 200);            // Max 200 alpha for white
         SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 255, 255, 255, alpha);
     }
     else
     {
         // Darken with black overlay
-        float intensity = (1.0f - _Brightness) / 0.5f;  // 0.0 to 1.0
-        int alpha = (int)(intensity * 200);  // Max 200 alpha for black
+        float intensity = (1.0f - _Brightness) / 0.5f; // 0.0 to 1.0
+        int alpha = (int)(intensity * 200);            // Max 200 alpha for black
         SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 0, 0, 0, alpha);
     }
 
@@ -367,60 +372,84 @@ static void drawHudWithPulse(Renderer *_Renderer, int _ComboCount, float _Multip
 
         /* Different effects based on combo tier */
         if (_ComboCount == 0)
-    {
-        /* Tier 1: No effect - static dark border */
-        hudR = 20;
-        hudG = 20;
-        hudB = 20;
-        alpha = 230;
-    }
-    else if (_Multiplier < 2.0f)  /* Tier 2: 1.5x (3-4 combo) */
-    {
-        /* Slow pulse - white glow */
-        float pulse = (sinf(time * 2.0f * intensityMult / 1000.0f) + 1.0f) * 0.5f;
-        int brightness = 20 + (int)(pulse * 50 * intensityMult);
-        hudR = brightness;
-        hudG = brightness;
-        hudB = brightness;
-        alpha = 230 - (int)(pulse * 20 * intensityMult);
-    }
-    else if (_Multiplier < 3.0f)  /* Tier 3: 2.0x (5-7 combo) */
-    {
-        /* Fast pulse - yellow tint */
-        float pulse = (sinf(time * 4.0f * intensityMult / 1000.0f) + 1.0f) * 0.5f;
-        hudR = 255;
-        hudG = 255 - (int)(pulse * 80);
-        hudB = 100 - (int)(pulse * 80);
-        alpha = 230 - (int)(pulse * 30 * intensityMult);
-    }
-    else if (_Multiplier < 5.0f)  /* Tier 4: 3.0x (8-11 combo) */
-    {
-        /* Double pulse - orange glow */
-        float pulse1 = (sinf(time * 5.0f * intensityMult / 1000.0f) + 1.0f) * 0.5f;
-        float pulse2 = (sinf(time * 10.0f * intensityMult / 1000.0f) + 1.0f) * 0.5f;
-        float combined = (pulse1 + pulse2) / 2.0f;
-        hudR = 255;
-        hudG = 150 - (int)(combined * 80);
-        hudB = 50 - (int)(combined * 50);
-        alpha = 230 - (int)(combined * 40 * intensityMult);
-    }
-    else  /* Tier 5: 5.0x (12+ combo) */
-    {
-        /* Rainbow flashing effect - faster in Power-Up mode */
-        int colorSpeed = _IsPowerUpMode ? 100 : 150;
-        int colorPhase = (time / colorSpeed) % 6;
-        float pulse = (sinf(time * 6.0f * intensityMult / 1000.0f) + 1.0f) * 0.5f;
-
-        switch (colorPhase)
         {
-            case 0: hudR = 255; hudG = (int)(pulse * 100); hudB = (int)(pulse * 100); break;  /* Red */
-            case 1: hudR = 255; hudG = 200; hudB = 0; break;  /* Yellow */
-            case 2: hudR = 0; hudG = 255; hudB = (int)(pulse * 100); break;  /* Green */
-            case 3: hudR = 0; hudG = 200; hudB = 255; break;  /* Cyan */
-            case 4: hudR = (int)(pulse * 150); hudG = 0; hudB = 255; break;  /* Blue */
-            case 5: hudR = 255; hudG = 0; hudB = 255; break;  /* Magenta */
+            /* Tier 1: No effect - static dark border */
+            hudR = 20;
+            hudG = 20;
+            hudB = 20;
+            alpha = 230;
         }
-        alpha = _IsPowerUpMode ? (200 - (int)(pulse * 70)) : (220 - (int)(pulse * 50));
+        else if (_Multiplier < 2.0f) /* Tier 2: 1.5x (3-4 combo) */
+        {
+            /* Slow pulse - white glow */
+            float pulse = (sinf(time * 2.0f * intensityMult / 1000.0f) + 1.0f) * 0.5f;
+            int brightness = 20 + (int)(pulse * 50 * intensityMult);
+            hudR = brightness;
+            hudG = brightness;
+            hudB = brightness;
+            alpha = 230 - (int)(pulse * 20 * intensityMult);
+        }
+        else if (_Multiplier < 3.0f) /* Tier 3: 2.0x (5-7 combo) */
+        {
+            /* Fast pulse - yellow tint */
+            float pulse = (sinf(time * 4.0f * intensityMult / 1000.0f) + 1.0f) * 0.5f;
+            hudR = 255;
+            hudG = 255 - (int)(pulse * 80);
+            hudB = 100 - (int)(pulse * 80);
+            alpha = 230 - (int)(pulse * 30 * intensityMult);
+        }
+        else if (_Multiplier < 5.0f) /* Tier 4: 3.0x (8-11 combo) */
+        {
+            /* Double pulse - orange glow */
+            float pulse1 = (sinf(time * 5.0f * intensityMult / 1000.0f) + 1.0f) * 0.5f;
+            float pulse2 = (sinf(time * 10.0f * intensityMult / 1000.0f) + 1.0f) * 0.5f;
+            float combined = (pulse1 + pulse2) / 2.0f;
+            hudR = 255;
+            hudG = 150 - (int)(combined * 80);
+            hudB = 50 - (int)(combined * 50);
+            alpha = 230 - (int)(combined * 40 * intensityMult);
+        }
+        else /* Tier 5: 5.0x (12+ combo) */
+        {
+            /* Rainbow flashing effect - faster in Power-Up mode */
+            int colorSpeed = _IsPowerUpMode ? 100 : 150;
+            int colorPhase = (time / colorSpeed) % 6;
+            float pulse = (sinf(time * 6.0f * intensityMult / 1000.0f) + 1.0f) * 0.5f;
+
+            switch (colorPhase)
+            {
+            case 0:
+                hudR = 255;
+                hudG = (int)(pulse * 100);
+                hudB = (int)(pulse * 100);
+                break; /* Red */
+            case 1:
+                hudR = 255;
+                hudG = 200;
+                hudB = 0;
+                break; /* Yellow */
+            case 2:
+                hudR = 0;
+                hudG = 255;
+                hudB = (int)(pulse * 100);
+                break; /* Green */
+            case 3:
+                hudR = 0;
+                hudG = 200;
+                hudB = 255;
+                break; /* Cyan */
+            case 4:
+                hudR = (int)(pulse * 150);
+                hudG = 0;
+                hudB = 255;
+                break; /* Blue */
+            case 5:
+                hudR = 255;
+                hudG = 0;
+                hudB = 255;
+                break; /* Magenta */
+            }
+            alpha = _IsPowerUpMode ? (200 - (int)(pulse * 70)) : (220 - (int)(pulse * 50));
         }
     }
 
@@ -444,7 +473,7 @@ static void drawHudWithPulse(Renderer *_Renderer, int _ComboCount, float _Multip
     SDL_RenderFillRect(_Renderer->sdlRenderer, &right);
 }
 
-void Renderer_DrawHudBorderWithScore(Renderer *_Renderer, int _Score)
+void Renderer_DrawHudBorderWithScore(Renderer *_Renderer, int _Score, int _Attempt, bool _ShowAttempt)
 {
     if (!_Renderer || !_Renderer->sdlRenderer)
         return;
@@ -465,12 +494,19 @@ void Renderer_DrawHudBorderWithScore(Renderer *_Renderer, int _Score)
     SDL_Rect right = {WINDOW_WIDTH - borderThickness, 0, borderThickness, WINDOW_HEIGHT};
     SDL_RenderFillRect(_Renderer->sdlRenderer, &right);
 
-    /* Draw SCORE text in the top HUD border */
-    char scoreText[32];
-    snprintf(scoreText, sizeof(scoreText), "SCORE: %d", _Score);
+    /* Draw text in the top HUD border - either ATTEMPT or SCORE */
+    char hudText[32];
+    if (_ShowAttempt)
+    {
+        snprintf(hudText, sizeof(hudText), "ATTEMPT %d/3", _Attempt + 1);
+    }
+    else
+    {
+        snprintf(hudText, sizeof(hudText), "SCORE: %d", _Score);
+    }
 
     SDL_Color white = {255, 255, 255, 255};
-    SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontSmall, scoreText, white);
+    SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontSmall, hudText, white);
 
     if (surface)
     {
@@ -481,8 +517,7 @@ void Renderer_DrawHudBorderWithScore(Renderer *_Renderer, int _Score)
                 WINDOW_WIDTH / 2 - surface->w / 2,
                 (borderThickness - surface->h) / 2,
                 surface->w,
-                surface->h
-            };
+                surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -524,8 +559,7 @@ void Renderer_DrawHudBorderWithCombo(Renderer *_Renderer, int _Score, int _Combo
                 WINDOW_WIDTH / 2 - surface->w / 2,
                 (borderThickness - surface->h) / 2,
                 surface->w,
-                surface->h
-            };
+                surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -587,7 +621,7 @@ void Renderer_DrawHudBorderWithCombo(Renderer *_Renderer, int _Score, int _Combo
         char comboText[64];
         snprintf(comboText, sizeof(comboText), "COMBO x%d   %.1fx MULTIPLIER", _Combo, _Multiplier);
 
-        SDL_Color comboColor = {255, 200, 50, 255};  /* Gold color for combo */
+        SDL_Color comboColor = {255, 200, 50, 255}; /* Gold color for combo */
         SDL_Surface *comboSurface = TTF_RenderText_Solid(_Renderer->fontSmall, comboText, comboColor);
         if (comboSurface)
         {
@@ -598,8 +632,7 @@ void Renderer_DrawHudBorderWithCombo(Renderer *_Renderer, int _Score, int _Combo
                     WINDOW_WIDTH / 2 - comboSurface->w / 2,
                     WINDOW_HEIGHT - borderThickness + (borderThickness - comboSurface->h) / 2,
                     comboSurface->w,
-                    comboSurface->h
-                };
+                    comboSurface->h};
                 SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
                 SDL_DestroyTexture(texture);
             }
@@ -629,8 +662,7 @@ void Renderer_DrawWalls(Renderer *_Renderer)
                 x * CELL_SIZE,
                 y * CELL_SIZE,
                 CELL_SIZE,
-                CELL_SIZE
-            };
+                CELL_SIZE};
 
             SDL_RenderFillRect(_Renderer->sdlRenderer, &dest);
         }
@@ -675,8 +707,7 @@ void Renderer_DrawSnake(Renderer *_Renderer, Snake *_Snake)
             _Snake->segments[i].x * CELL_SIZE,
             _Snake->segments[i].y * CELL_SIZE,
             CELL_SIZE,
-            CELL_SIZE
-        };
+            CELL_SIZE};
 
         SDL_RenderFillRect(_Renderer->sdlRenderer, &rect);
     }
@@ -692,8 +723,7 @@ void Renderer_DrawFood(Renderer *_Renderer, Position *_Food)
         _Food->x * CELL_SIZE,
         _Food->y * CELL_SIZE,
         CELL_SIZE,
-        CELL_SIZE
-    };
+        CELL_SIZE};
 
     SDL_RenderFillRect(_Renderer->sdlRenderer, &rect);
 }
@@ -708,8 +738,7 @@ void Renderer_DrawPowerUp(Renderer *_Renderer, PowerUp *_PowerUp)
         _PowerUp->position.x * CELL_SIZE,
         _PowerUp->position.y * CELL_SIZE,
         CELL_SIZE,
-        CELL_SIZE
-    };
+        CELL_SIZE};
 
     unsigned int time = SDL_GetTicks();
     unsigned int age = time - _PowerUp->spawnTime;
@@ -771,8 +800,7 @@ void Renderer_DrawPowerUp(Renderer *_Renderer, PowerUp *_PowerUp)
             {rect.x + CELL_SIZE - 2, rect.y + CELL_SIZE / 2},
             {rect.x + CELL_SIZE / 2, rect.y + CELL_SIZE - 2},
             {rect.x + 2, rect.y + CELL_SIZE / 2},
-            {rect.x + CELL_SIZE / 2, rect.y + 2}
-        };
+            {rect.x + CELL_SIZE / 2, rect.y + 2}};
         SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 255, 100, 255, (int)(pulse * 255));
         SDL_RenderDrawLines(_Renderer->sdlRenderer, points, 5);
         break;
@@ -817,7 +845,7 @@ void Renderer_DrawMenu(Renderer *_Renderer, int _SelectedBg)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, titleSurface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - titleSurface->w/2, 100, titleSurface->w, titleSurface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - titleSurface->w / 2, 100, titleSurface->w, titleSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -840,7 +868,7 @@ void Renderer_DrawMenu(Renderer *_Renderer, int _SelectedBg)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, bgSurface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - bgSurface->w/2, 300, bgSurface->w, bgSurface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - bgSurface->w / 2, 300, bgSurface->w, bgSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -854,7 +882,7 @@ void Renderer_DrawMenu(Renderer *_Renderer, int _SelectedBg)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, instSurface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - instSurface->w/2, 400, instSurface->w, instSurface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - instSurface->w / 2, 400, instSurface->w, instSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -866,7 +894,7 @@ void Renderer_DrawMenu(Renderer *_Renderer, int _SelectedBg)
 void Renderer_DrawModeSelect(Renderer *_Renderer, Game *_Game)
 {
     SDL_Color white = {255, 255, 255, 255};
-    SDL_Color yellow = {255, 255, 0, 255};
+    SDL_Color green = {100, 200, 100, 255};
     SDL_Color gray = {150, 150, 150, 255};
 
     /* Title */
@@ -876,7 +904,7 @@ void Renderer_DrawModeSelect(Renderer *_Renderer, Game *_Game)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, titleSurface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - titleSurface->w/2, 80, titleSurface->w, titleSurface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - titleSurface->w / 2, 80, titleSurface->w, titleSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -884,14 +912,14 @@ void Renderer_DrawModeSelect(Renderer *_Renderer, Game *_Game)
     }
 
     /* Classic Mode */
-    SDL_Color classicColor = (_Game->modeSelection == 0) ? yellow : gray;
+    SDL_Color classicColor = (_Game->modeSelection == 0) ? green : gray;
     SDL_Surface *classicSurface = TTF_RenderText_Solid(_Renderer->fontMedium, "CLASSIC MODE", classicColor);
     if (classicSurface)
     {
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, classicSurface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - classicSurface->w/2, 200, classicSurface->w, classicSurface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - classicSurface->w / 2, 200, classicSurface->w, classicSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -905,7 +933,7 @@ void Renderer_DrawModeSelect(Renderer *_Renderer, Game *_Game)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, classicDescSurface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - classicDescSurface->w/2, 235, classicDescSurface->w, classicDescSurface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - classicDescSurface->w / 2, 235, classicDescSurface->w, classicDescSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -913,14 +941,14 @@ void Renderer_DrawModeSelect(Renderer *_Renderer, Game *_Game)
     }
 
     /* Power-Up Mode */
-    SDL_Color powerupColor = (_Game->modeSelection == 1) ? yellow : gray;
+    SDL_Color powerupColor = (_Game->modeSelection == 1) ? green : gray;
     SDL_Surface *powerupSurface = TTF_RenderText_Solid(_Renderer->fontMedium, "POWER-UP MODE", powerupColor);
     if (powerupSurface)
     {
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, powerupSurface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - powerupSurface->w/2, 300, powerupSurface->w, powerupSurface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - powerupSurface->w / 2, 300, powerupSurface->w, powerupSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -934,7 +962,7 @@ void Renderer_DrawModeSelect(Renderer *_Renderer, Game *_Game)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, powerupDescSurface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - powerupDescSurface->w/2, 335, powerupDescSurface->w, powerupDescSurface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - powerupDescSurface->w / 2, 335, powerupDescSurface->w, powerupDescSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -942,13 +970,13 @@ void Renderer_DrawModeSelect(Renderer *_Renderer, Game *_Game)
     }
 
     /* Instructions */
-    SDL_Surface *instrSurface = TTF_RenderText_Solid(_Renderer->fontSmall, "ENTER to confirm, ESC to go back", gray);
+    SDL_Surface *instrSurface = TTF_RenderText_Solid(_Renderer->fontSmall, "ENTER CONFIRM   ESC BACK", white);
     if (instrSurface)
     {
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, instrSurface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - instrSurface->w/2, 420, instrSurface->w, instrSurface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - instrSurface->w / 2, 420, instrSurface->w, instrSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -959,14 +987,14 @@ void Renderer_DrawModeSelect(Renderer *_Renderer, Game *_Game)
 void Renderer_DrawNameInput(Renderer *_Renderer, Game *_Game, unsigned int _Tick)
 {
     /* Blinking colors - cycle through RGB */
-    int blinkPhase = (_Tick / 300) % 6;  /* Change color every 300ms */
+    int blinkPhase = (_Tick / 300) % 6; /* Change color every 300ms */
     SDL_Color promptColors[] = {
-        {255, 100, 100, 255},  /* Red */
-        {255, 200, 100, 255},  /* Orange */
-        {255, 255, 100, 255},  /* Yellow */
-        {100, 255, 100, 255},  /* Green */
-        {100, 200, 255, 255},  /* Cyan */
-        {200, 100, 255, 255}   /* Purple */
+        {255, 100, 100, 255}, /* Red */
+        {255, 200, 100, 255}, /* Orange */
+        {255, 255, 100, 255}, /* Yellow */
+        {100, 255, 100, 255}, /* Green */
+        {100, 200, 255, 255}, /* Cyan */
+        {200, 100, 255, 255}  /* Purple */
     };
     SDL_Color white = {255, 255, 255, 255};
     SDL_Color green = {100, 200, 100, 255};
@@ -978,7 +1006,7 @@ void Renderer_DrawNameInput(Renderer *_Renderer, Game *_Game, unsigned int _Tick
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, titleSurface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - titleSurface->w/2, 100, titleSurface->w, titleSurface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - titleSurface->w / 2, 100, titleSurface->w, titleSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -986,13 +1014,13 @@ void Renderer_DrawNameInput(Renderer *_Renderer, Game *_Game, unsigned int _Tick
     }
 
     /* Blinking "TYPE YOUR NAME" prompt */
-    SDL_Surface *promptSurface = TTF_RenderText_Solid(_Renderer->fontMedium, "TYPE YOUR NAME", promptColors[blinkPhase]);
+    SDL_Surface *promptSurface = TTF_RenderText_Solid(_Renderer->fontSmall, "TYPE YOUR NAME", promptColors[blinkPhase]);
     if (promptSurface)
     {
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, promptSurface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - promptSurface->w/2, 200, promptSurface->w, promptSurface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - promptSurface->w / 2, 200, promptSurface->w, promptSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1008,7 +1036,7 @@ void Renderer_DrawNameInput(Renderer *_Renderer, Game *_Game, unsigned int _Tick
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, nameSurface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - nameSurface->w/2, 260, nameSurface->w, nameSurface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - nameSurface->w / 2, 260, nameSurface->w, nameSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1022,7 +1050,7 @@ void Renderer_DrawNameInput(Renderer *_Renderer, Game *_Game, unsigned int _Tick
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, instSurface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - instSurface->w/2, WINDOW_HEIGHT - 60, instSurface->w, instSurface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - instSurface->w / 2, WINDOW_HEIGHT - 60, instSurface->w, instSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1067,10 +1095,125 @@ void Renderer_DrawSnakeColored(Renderer *_Renderer, Snake *_Snake, int _R, int _
             _Snake->segments[i].x * CELL_SIZE,
             _Snake->segments[i].y * CELL_SIZE,
             CELL_SIZE,
-            CELL_SIZE
-        };
+            CELL_SIZE};
 
         SDL_RenderFillRect(_Renderer->sdlRenderer, &rect);
+    }
+}
+
+// Draw retro loading screen with scanlines and progress bar
+void Renderer_DrawLoadingScreen(Renderer *_Renderer, float _Progress, unsigned int _CurrentTime)
+{
+    // Black background
+    SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 0, 0, 0, 255);
+    SDL_RenderClear(_Renderer->sdlRenderer);
+
+    SDL_Color green = {0, 255, 0, 255};
+    SDL_Color white = {255, 255, 255, 255};
+
+    // Retro title "SNEJK2D" with glitch effect
+    int glitch = (_CurrentTime % 1000 < 50) ? (rand() % 4 - 2) : 0;  // Random glitch every second
+    SDL_Surface *titleSurface = TTF_RenderText_Solid(_Renderer->fontLarge, "SNEJK2D", green);
+    if (titleSurface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, titleSurface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - titleSurface->w/2 + glitch, 120, titleSurface->w, titleSurface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(titleSurface);
+    }
+
+    // Rotating loading messages based on progress
+    const char *loadingMessages[] = {
+        "LOADING SNAKES",
+        "LOADING SFX",
+        "LOADING TEXTURES",
+        "INITIALIZING GRID",
+        "SPAWNING POWER-UPS",
+        "CALIBRATING WALLS"
+    };
+    int numMessages = 6;
+    int messageIndex = (int)(_Progress * numMessages);
+    if (messageIndex >= numMessages) messageIndex = numMessages - 1;
+
+    // Animated dots
+    int dotCount = ((_CurrentTime / 300) % 4);  // 0-3 dots animating
+    char loadingText[64];
+    snprintf(loadingText, sizeof(loadingText), "%s%.*s", loadingMessages[messageIndex], dotCount, "...");
+
+    SDL_Surface *loadingSurface = TTF_RenderText_Solid(_Renderer->fontMedium, loadingText, white);
+    if (loadingSurface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, loadingSurface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - loadingSurface->w/2, 220, loadingSurface->w, loadingSurface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(loadingSurface);
+    }
+
+    // Progress bar - retro style
+    int barWidth = 400;
+    int barHeight = 30;
+    int barX = (WINDOW_WIDTH - barWidth) / 2;
+    int barY = 280;
+
+    // Progress bar border (green)
+    SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 0, 255, 0, 255);
+    SDL_Rect borderRect = {barX - 2, barY - 2, barWidth + 4, barHeight + 4};
+    SDL_RenderDrawRect(_Renderer->sdlRenderer, &borderRect);
+
+    // Progress bar background (dark)
+    SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 20, 20, 20, 255);
+    SDL_Rect bgRect = {barX, barY, barWidth, barHeight};
+    SDL_RenderFillRect(_Renderer->sdlRenderer, &bgRect);
+
+    // Progress bar fill (green gradient effect with segments)
+    int fillWidth = (int)(barWidth * _Progress);
+    if (fillWidth > 0)
+    {
+        // Draw segmented progress bar for retro look
+        for (int i = 0; i < fillWidth; i += 8)
+        {
+            int segWidth = (i + 8 < fillWidth) ? 8 : (fillWidth - i);
+            // Alternating green shades for segments
+            if ((i / 8) % 2 == 0)
+                SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 0, 255, 0, 255);
+            else
+                SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 0, 200, 0, 255);
+
+            SDL_Rect segRect = {barX + i, barY, segWidth - 1, barHeight};
+            SDL_RenderFillRect(_Renderer->sdlRenderer, &segRect);
+        }
+    }
+
+    // Progress percentage
+    char percentText[16];
+    snprintf(percentText, sizeof(percentText), "%d%%", (int)(_Progress * 100));
+    SDL_Surface *percentSurface = TTF_RenderText_Solid(_Renderer->fontSmall, percentText, green);
+    if (percentSurface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, percentSurface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - percentSurface->w/2, barY + barHeight + 15, percentSurface->w, percentSurface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(percentSurface);
+    }
+
+    // Retro scanlines effect (every other line is slightly darker)
+    SDL_SetRenderDrawBlendMode(_Renderer->sdlRenderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 0, 0, 0, 30);
+    for (int y = 0; y < WINDOW_HEIGHT; y += 2)
+    {
+        SDL_RenderDrawLine(_Renderer->sdlRenderer, 0, y, WINDOW_WIDTH, y);
     }
 }
 
@@ -1088,7 +1231,7 @@ void Renderer_DrawMainMenu(Renderer *_Renderer, int _Selection)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, title_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - title_surface->w/2, 80, title_surface->w, title_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - title_surface->w / 2, 80, title_surface->w, title_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1108,7 +1251,7 @@ void Renderer_DrawMainMenu(Renderer *_Renderer, int _Selection)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, sp_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - sp_surface->w/2, startY, sp_surface->w, sp_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - sp_surface->w / 2, startY, sp_surface->w, sp_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1124,7 +1267,7 @@ void Renderer_DrawMainMenu(Renderer *_Renderer, int _Selection)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, mp_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - mp_surface->w/2, startY + spacing, mp_surface->w, mp_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - mp_surface->w / 2, startY + spacing, mp_surface->w, mp_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1140,7 +1283,7 @@ void Renderer_DrawMainMenu(Renderer *_Renderer, int _Selection)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, sb_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - sb_surface->w/2, startY + spacing * 2, sb_surface->w, sb_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - sb_surface->w / 2, startY + spacing * 2, sb_surface->w, sb_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1156,7 +1299,7 @@ void Renderer_DrawMainMenu(Renderer *_Renderer, int _Selection)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, opt_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - opt_surface->w/2, startY + spacing * 3, opt_surface->w, opt_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - opt_surface->w / 2, startY + spacing * 3, opt_surface->w, opt_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1172,7 +1315,7 @@ void Renderer_DrawMainMenu(Renderer *_Renderer, int _Selection)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, exit_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - exit_surface->w/2, startY + spacing * 4, exit_surface->w, exit_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - exit_surface->w / 2, startY + spacing * 4, exit_surface->w, exit_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1188,7 +1331,7 @@ void Renderer_DrawPauseMenu(Renderer *_Renderer, int _Selection)
 
     // Draw semi-transparent overlay
     SDL_SetRenderDrawBlendMode(_Renderer->sdlRenderer, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 0, 0, 0, 180);  // Dark overlay with transparency
+    SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 0, 0, 0, 180); // Dark overlay with transparency
     SDL_Rect overlay = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
     SDL_RenderFillRect(_Renderer->sdlRenderer, &overlay);
 
@@ -1199,7 +1342,7 @@ void Renderer_DrawPauseMenu(Renderer *_Renderer, int _Selection)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, title_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - title_surface->w/2, 150, title_surface->w, title_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - title_surface->w / 2, 150, title_surface->w, title_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1219,7 +1362,7 @@ void Renderer_DrawPauseMenu(Renderer *_Renderer, int _Selection)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, resume_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - resume_surface->w/2, startY, resume_surface->w, resume_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - resume_surface->w / 2, startY, resume_surface->w, resume_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1235,7 +1378,7 @@ void Renderer_DrawPauseMenu(Renderer *_Renderer, int _Selection)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, exit_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - exit_surface->w/2, startY + spacing, exit_surface->w, exit_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - exit_surface->w / 2, startY + spacing, exit_surface->w, exit_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1256,7 +1399,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, title_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - title_surface->w/2, 50, title_surface->w, title_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - title_surface->w / 2, 50, title_surface->w, title_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1266,7 +1409,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
     // Menu Music
     SDL_Color menuMusic_color = _Game->optionsSelection == 0 ? green : gray;
     char menuMusic_text[64];
-    snprintf(menuMusic_text, sizeof(menuMusic_text), "%s Menu Music: [%s]",
+    snprintf(menuMusic_text, sizeof(menuMusic_text), "%s MENU MUSIC: [%s]",
              _Game->optionsSelection == 0 ? ">" : " ", _Game->settings.menuMusicEnabled ? "ON" : "OFF");
     SDL_Surface *menuMusic_surface = TTF_RenderText_Solid(_Renderer->fontMedium, menuMusic_text, menuMusic_color);
     if (menuMusic_surface)
@@ -1274,7 +1417,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, menuMusic_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - menuMusic_surface->w/2, 180, menuMusic_surface->w, menuMusic_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - menuMusic_surface->w / 2, 120, menuMusic_surface->w, menuMusic_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1284,7 +1427,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
     // Game Music
     SDL_Color gameMusic_color = _Game->optionsSelection == 1 ? green : gray;
     char gameMusic_text[64];
-    snprintf(gameMusic_text, sizeof(gameMusic_text), "%s Game Music: [%s]",
+    snprintf(gameMusic_text, sizeof(gameMusic_text), "%s GAME MUSIC: [%s]",
              _Game->optionsSelection == 1 ? ">" : " ", _Game->settings.gameMusicEnabled ? "ON" : "OFF");
     SDL_Surface *gameMusic_surface = TTF_RenderText_Solid(_Renderer->fontMedium, gameMusic_text, gameMusic_color);
     if (gameMusic_surface)
@@ -1292,7 +1435,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, gameMusic_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - gameMusic_surface->w/2, 230, gameMusic_surface->w, gameMusic_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - gameMusic_surface->w / 2, 170, gameMusic_surface->w, gameMusic_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1304,16 +1447,16 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
     char grid_text[64];
     const char *grid_label = _Game->settings.gridAlpha == 0 ? "OFF" : "";
     if (_Game->settings.gridAlpha == 0)
-        snprintf(grid_text, sizeof(grid_text), "%s Grid: [%s]", _Game->optionsSelection == 2 ? ">" : " ", grid_label);
+        snprintf(grid_text, sizeof(grid_text), "%s GRID: [%s]", _Game->optionsSelection == 2 ? ">" : " ", grid_label);
     else
-        snprintf(grid_text, sizeof(grid_text), "%s Grid: [%d]", _Game->optionsSelection == 2 ? ">" : " ", _Game->settings.gridAlpha);
+        snprintf(grid_text, sizeof(grid_text), "%s GRID: [%d]", _Game->optionsSelection == 2 ? ">" : " ", _Game->settings.gridAlpha);
     SDL_Surface *grid_surface = TTF_RenderText_Solid(_Renderer->fontMedium, grid_text, grid_color);
     if (grid_surface)
     {
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, grid_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - grid_surface->w/2, 280, grid_surface->w, grid_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - grid_surface->w / 2, 220, grid_surface->w, grid_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1323,7 +1466,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
     // Brightness
     SDL_Color bright_color = _Game->optionsSelection == 3 ? green : gray;
     char bright_text[64];
-    snprintf(bright_text, sizeof(bright_text), "%s Brightness: [%.0f%%]",
+    snprintf(bright_text, sizeof(bright_text), "%s BRIGHTNESS: [%.0f%%]",
              _Game->optionsSelection == 3 ? ">" : " ", _Game->settings.brightness * 100);
     SDL_Surface *bright_surface = TTF_RenderText_Solid(_Renderer->fontMedium, bright_text, bright_color);
     if (bright_surface)
@@ -1331,7 +1474,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, bright_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - bright_surface->w/2, 305, bright_surface->w, bright_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - bright_surface->w / 2, 270, bright_surface->w, bright_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1341,7 +1484,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
     // Combo Effects
     SDL_Color combo_color = _Game->optionsSelection == 4 ? green : gray;
     char combo_text[64];
-    snprintf(combo_text, sizeof(combo_text), "%s Combo HUD Effects: [%s]",
+    snprintf(combo_text, sizeof(combo_text), "%s COMBO HUD EFFECTS: [%s]",
              _Game->optionsSelection == 4 ? ">" : " ", _Game->settings.comboEffects ? "ON" : "OFF");
     SDL_Surface *combo_surface = TTF_RenderText_Solid(_Renderer->fontMedium, combo_text, combo_color);
     if (combo_surface)
@@ -1349,7 +1492,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, combo_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - combo_surface->w/2, 345, combo_surface->w, combo_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - combo_surface->w / 2, 320, combo_surface->w, combo_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1365,7 +1508,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, reset_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - reset_surface->w/2, 395, reset_surface->w, reset_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - reset_surface->w / 2, 370, reset_surface->w, reset_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1379,7 +1522,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, inst_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - inst_surface->w/2, WINDOW_HEIGHT - 60, inst_surface->w, inst_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - inst_surface->w / 2, WINDOW_HEIGHT - 40, inst_surface->w, inst_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1395,7 +1538,7 @@ void Renderer_DrawMultiplayerMenu(Renderer *_Renderer, MultiplayerContext *_MpCt
         return;
 
     SDL_Color white = {255, 255, 255, 255};
-    SDL_Color green = {0, 255, 0, 255};  // Same green as main menu
+    SDL_Color green = {0, 255, 0, 255}; // Same green as main menu
     SDL_Color gray = {150, 150, 150, 255};
 
     // Title - SNEJK2D at same height as main menu
@@ -1405,7 +1548,7 @@ void Renderer_DrawMultiplayerMenu(Renderer *_Renderer, MultiplayerContext *_MpCt
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, title_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - title_surface->w/2, 100, title_surface->w, title_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - title_surface->w / 2, 100, title_surface->w, title_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1414,7 +1557,7 @@ void Renderer_DrawMultiplayerMenu(Renderer *_Renderer, MultiplayerContext *_MpCt
 
     // Menu options - centered like main menu
     const char *options[] = {"HOST GAME", "JOIN GAME"};
-    int y_start = 250;  // Same as main menu
+    int y_start = 220; // Moved up for better centering
 
     for (int i = 0; i < 2; i++)
     {
@@ -1431,7 +1574,7 @@ void Renderer_DrawMultiplayerMenu(Renderer *_Renderer, MultiplayerContext *_MpCt
             SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, surface);
             if (texture)
             {
-                SDL_Rect dest = {WINDOW_WIDTH/2 - surface->w/2, y_start + (i * 60), surface->w, surface->h};
+                SDL_Rect dest = {WINDOW_WIDTH / 2 - surface->w / 2, y_start + (i * 60), surface->w, surface->h};
                 SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
                 SDL_DestroyTexture(texture);
             }
@@ -1441,14 +1584,14 @@ void Renderer_DrawMultiplayerMenu(Renderer *_Renderer, MultiplayerContext *_MpCt
 
     // Instructions
     SDL_Surface *inst_surface = TTF_RenderText_Solid(_Renderer->fontSmall,
-        "UP DOWN SELECT   ENTER CONFIRM   ESC BACK", white);
+                                                     "UP DOWN SELECT   ENTER CONFIRM   ESC BACK", white);
     if (inst_surface)
     {
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, inst_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - inst_surface->w/2, WINDOW_HEIGHT - 60,
-                           inst_surface->w, inst_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - inst_surface->w / 2, WINDOW_HEIGHT - 60,
+                             inst_surface->w, inst_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1462,19 +1605,19 @@ void Renderer_DrawMultiplayerRoomName(Renderer *_Renderer, MultiplayerContext *_
         return;
 
     /* Blinking colors - cycle through RGB */
-    int blinkPhase = (_CurrentTime / 300) % 6;  /* Change color every 300ms */
+    int blinkPhase = (_CurrentTime / 300) % 6; /* Change color every 300ms */
     SDL_Color promptColors[] = {
-        {255, 100, 100, 255},  /* Red */
-        {255, 200, 100, 255},  /* Orange */
-        {255, 255, 100, 255},  /* Yellow */
-        {100, 255, 100, 255},  /* Green */
-        {100, 200, 255, 255},  /* Cyan */
-        {200, 100, 255, 255}   /* Purple */
+        {255, 100, 100, 255}, /* Red */
+        {255, 200, 100, 255}, /* Orange */
+        {255, 255, 100, 255}, /* Yellow */
+        {100, 255, 100, 255}, /* Green */
+        {100, 200, 255, 255}, /* Cyan */
+        {200, 100, 255, 255}  /* Purple */
     };
 
     SDL_Color white = {255, 255, 255, 255};
     SDL_Color green = {100, 200, 100, 255};
-    int y = 100;
+    int y = 70; // Moved up for better centering
 
     // Title
     SDL_Surface *title_surface = TTF_RenderText_Solid(_Renderer->fontLarge, "SNEJK2D", white);
@@ -1483,7 +1626,7 @@ void Renderer_DrawMultiplayerRoomName(Renderer *_Renderer, MultiplayerContext *_
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, title_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - title_surface->w/2, y, title_surface->w, title_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - title_surface->w / 2, y, title_surface->w, title_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1493,13 +1636,13 @@ void Renderer_DrawMultiplayerRoomName(Renderer *_Renderer, MultiplayerContext *_
     y += 70;
 
     // Blinking "TYPE GAME NAME" prompt
-    SDL_Surface *promptSurface = TTF_RenderText_Solid(_Renderer->fontMedium, "TYPE GAME NAME", promptColors[blinkPhase]);
+    SDL_Surface *promptSurface = TTF_RenderText_Solid(_Renderer->fontSmall, "TYPE GAME NAME", promptColors[blinkPhase]);
     if (promptSurface)
     {
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, promptSurface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - promptSurface->w/2, y, promptSurface->w, promptSurface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - promptSurface->w / 2, y, promptSurface->w, promptSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1518,7 +1661,7 @@ void Renderer_DrawMultiplayerRoomName(Renderer *_Renderer, MultiplayerContext *_
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, input_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - input_surface->w/2, y, input_surface->w, input_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - input_surface->w / 2, y, input_surface->w, input_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1534,7 +1677,7 @@ void Renderer_DrawMultiplayerRoomName(Renderer *_Renderer, MultiplayerContext *_
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, mode_label);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - mode_label->w/2, y, mode_label->w, mode_label->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - mode_label->w / 2, y, mode_label->w, mode_label->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1554,7 +1697,7 @@ void Renderer_DrawMultiplayerRoomName(Renderer *_Renderer, MultiplayerContext *_
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, mode_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - mode_surface->w/2, y, mode_surface->w, mode_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - mode_surface->w / 2, y, mode_surface->w, mode_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1570,7 +1713,7 @@ void Renderer_DrawMultiplayerRoomName(Renderer *_Renderer, MultiplayerContext *_
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, map_label);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - map_label->w/2, y, map_label->w, map_label->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - map_label->w / 2, y, map_label->w, map_label->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1590,7 +1733,7 @@ void Renderer_DrawMultiplayerRoomName(Renderer *_Renderer, MultiplayerContext *_
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, map_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - map_surface->w/2, y, map_surface->w, map_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - map_surface->w / 2, y, map_surface->w, map_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1599,14 +1742,14 @@ void Renderer_DrawMultiplayerRoomName(Renderer *_Renderer, MultiplayerContext *_
 
     // Instructions (shortened to fit screen)
     SDL_Surface *inst_surface = TTF_RenderText_Solid(_Renderer->fontSmall,
-        "MODE UP DOWN  MAP LEFT RIGHT  ENTER CREATE", white);
+                                                     "MODE UP DOWN  MAP LEFT RIGHT  ENTER CREATE", white);
     if (inst_surface)
     {
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, inst_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - inst_surface->w/2, WINDOW_HEIGHT - 60,
-                           inst_surface->w, inst_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - inst_surface->w / 2, WINDOW_HEIGHT - 60,
+                             inst_surface->w, inst_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1631,7 +1774,7 @@ void Renderer_DrawMultiplayerBrowse(Renderer *_Renderer, MultiplayerContext *_Mp
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, title_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - title_surface->w/2, y, title_surface->w, title_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - title_surface->w / 2, y, title_surface->w, title_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1649,7 +1792,7 @@ void Renderer_DrawMultiplayerBrowse(Renderer *_Renderer, MultiplayerContext *_Mp
             SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, surface);
             if (texture)
             {
-                SDL_Rect dest = {WINDOW_WIDTH/2 - surface->w/2, y + 40, surface->w, surface->h};
+                SDL_Rect dest = {WINDOW_WIDTH / 2 - surface->w / 2, y + 40, surface->w, surface->h};
                 SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
                 SDL_DestroyTexture(texture);
             }
@@ -1667,7 +1810,7 @@ void Renderer_DrawMultiplayerBrowse(Renderer *_Renderer, MultiplayerContext *_Mp
             const char *map_names[] = {"de_cyberpunk", "de_forest", "de_underwater", "de_mountain", "de_country"};
             int map_id = _MpCtx->browsedGames[i].mapId;
             if (map_id < 0 || map_id >= 5)
-                map_id = 0;  // Default to first map if invalid
+                map_id = 0; // Default to first map if invalid
             const char *map_name = map_names[map_id];
 
             // Shorten name if needed
@@ -1682,11 +1825,11 @@ void Renderer_DrawMultiplayerBrowse(Renderer *_Renderer, MultiplayerContext *_Mp
 
             char line[128];
             snprintf(line, sizeof(line), "%s%s [%s] (%d/%d)",
-                    prefix,
-                    name_to_show,
-                    map_name,
-                    _MpCtx->browsedGames[i].playerCount,
-                    _MpCtx->browsedGames[i].maxPlayers);
+                     prefix,
+                     name_to_show,
+                     map_name,
+                     _MpCtx->browsedGames[i].playerCount,
+                     _MpCtx->browsedGames[i].maxPlayers);
 
             SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontSmall, line, color);
             if (surface)
@@ -1705,9 +1848,7 @@ void Renderer_DrawMultiplayerBrowse(Renderer *_Renderer, MultiplayerContext *_Mp
     }
 
     // Instructions
-    const char *instructions = _MpCtx->browsedGameCount > 0 ?
-        "UP DOWN SELECT   ENTER JOIN   R REFRESH   ESC BACK" :
-        "R REFRESH   ESC BACK";
+    const char *instructions = _MpCtx->browsedGameCount > 0 ? "UP DOWN SELECT   ENTER JOIN   R REFRESH   ESC BACK" : "R REFRESH   ESC BACK";
 
     SDL_Surface *inst_surface = TTF_RenderText_Solid(_Renderer->fontSmall, instructions, white);
     if (inst_surface)
@@ -1715,8 +1856,8 @@ void Renderer_DrawMultiplayerBrowse(Renderer *_Renderer, MultiplayerContext *_Mp
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, inst_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - inst_surface->w/2, WINDOW_HEIGHT - 60,
-                           inst_surface->w, inst_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - inst_surface->w / 2, WINDOW_HEIGHT - 60,
+                             inst_surface->w, inst_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1742,7 +1883,7 @@ void Renderer_DrawMultiplayerLobby(Renderer *_Renderer, MultiplayerContext *_MpC
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, title_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - title_surface->w/2, 90, title_surface->w, title_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - title_surface->w / 2, 90, title_surface->w, title_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1760,7 +1901,7 @@ void Renderer_DrawMultiplayerLobby(Renderer *_Renderer, MultiplayerContext *_MpC
             SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, session_surface);
             if (texture)
             {
-                SDL_Rect dest = {WINDOW_WIDTH/2 - session_surface->w/2, 145, session_surface->w, session_surface->h};
+                SDL_Rect dest = {WINDOW_WIDTH / 2 - session_surface->w / 2, 145, session_surface->w, session_surface->h};
                 SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
                 SDL_DestroyTexture(texture);
             }
@@ -1778,37 +1919,20 @@ void Renderer_DrawMultiplayerLobby(Renderer *_Renderer, MultiplayerContext *_MpC
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, mode_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - mode_surface->w/2, _MpCtx->isHost ? 180 : 145, mode_surface->w, mode_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - mode_surface->w / 2, _MpCtx->isHost ? 180 : 145, mode_surface->w, mode_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
         SDL_FreeSurface(mode_surface);
     }
 
-    // Player list
+    // Player list - only show players who have joined
     int y_offset = _MpCtx->isHost ? 220 : 185;
     for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
     {
+        // Skip players who haven't joined
         if (!_MpCtx->players[i].joined)
-        {
-            // Show empty slot
-            char player_text[64];
-            snprintf(player_text, sizeof(player_text), "P%d: WAITING...", i + 1);
-            SDL_Surface *player_surface = TTF_RenderText_Solid(_Renderer->fontMedium, player_text, gray);
-            if (player_surface)
-            {
-                SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, player_surface);
-                if (texture)
-                {
-                    SDL_Rect dest = {WINDOW_WIDTH/2 - player_surface->w/2, y_offset, player_surface->w, player_surface->h};
-                    SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
-                    SDL_DestroyTexture(texture);
-                }
-                SDL_FreeSurface(player_surface);
-            }
-            y_offset += 50;
             continue;
-        }
 
         // Show player
         char player_text[96];
@@ -1829,7 +1953,7 @@ void Renderer_DrawMultiplayerLobby(Renderer *_Renderer, MultiplayerContext *_MpC
             SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, player_surface);
             if (texture)
             {
-                SDL_Rect dest = {WINDOW_WIDTH/2 - player_surface->w/2, y_offset, player_surface->w, player_surface->h};
+                SDL_Rect dest = {WINDOW_WIDTH / 2 - player_surface->w / 2, y_offset, player_surface->w, player_surface->h};
                 SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
                 SDL_DestroyTexture(texture);
             }
@@ -1850,8 +1974,8 @@ void Renderer_DrawMultiplayerLobby(Renderer *_Renderer, MultiplayerContext *_MpC
         {
             SDL_Color chat_color = {150, 150, 150, 255};
             SDL_Surface *chat_surface = TTF_RenderText_Solid(_Renderer->fontSmall,
-                                                              _MpCtx->chatMessages[start_idx + i],
-                                                              chat_color);
+                                                             _MpCtx->chatMessages[start_idx + i],
+                                                             chat_color);
             if (chat_surface)
             {
                 SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, chat_surface);
@@ -1868,9 +1992,7 @@ void Renderer_DrawMultiplayerLobby(Renderer *_Renderer, MultiplayerContext *_MpC
     }
 
     // Instructions
-    const char *inst_text = _MpCtx->isHost ?
-        "SPACE READY   ENTER START   C CHAT   N NICK" :
-        "SPACE READY   C CHAT   N NICK";
+    const char *inst_text = _MpCtx->isHost ? "SPACE READY   ENTER START   C CHAT   N NICK" : "SPACE READY   C CHAT   N NICK";
 
     SDL_Surface *inst_surface = TTF_RenderText_Solid(_Renderer->fontSmall, inst_text, white);
     if (inst_surface)
@@ -1878,8 +2000,8 @@ void Renderer_DrawMultiplayerLobby(Renderer *_Renderer, MultiplayerContext *_MpC
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, inst_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - inst_surface->w/2, WINDOW_HEIGHT - 60,
-                           inst_surface->w, inst_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - inst_surface->w / 2, WINDOW_HEIGHT - 60,
+                             inst_surface->w, inst_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1906,7 +2028,7 @@ void Renderer_DrawChatOverlay(Renderer *_Renderer, MultiplayerContext *_MpCtx)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, title_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - title_surface->w/2, 150, title_surface->w, title_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - title_surface->w / 2, 150, title_surface->w, title_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1922,7 +2044,7 @@ void Renderer_DrawChatOverlay(Renderer *_Renderer, MultiplayerContext *_MpCtx)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, input_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - input_surface->w/2, 210, input_surface->w, input_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - input_surface->w / 2, 210, input_surface->w, input_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1936,7 +2058,7 @@ void Renderer_DrawChatOverlay(Renderer *_Renderer, MultiplayerContext *_MpCtx)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, inst_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - inst_surface->w/2, WINDOW_HEIGHT - 60, inst_surface->w, inst_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - inst_surface->w / 2, WINDOW_HEIGHT - 60, inst_surface->w, inst_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1963,7 +2085,7 @@ void Renderer_DrawNickOverlay(Renderer *_Renderer, MultiplayerContext *_MpCtx)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, title_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - title_surface->w/2, 150, title_surface->w, title_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - title_surface->w / 2, 150, title_surface->w, title_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1979,7 +2101,7 @@ void Renderer_DrawNickOverlay(Renderer *_Renderer, MultiplayerContext *_MpCtx)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, input_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - input_surface->w/2, 210, input_surface->w, input_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - input_surface->w / 2, 210, input_surface->w, input_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1993,7 +2115,7 @@ void Renderer_DrawNickOverlay(Renderer *_Renderer, MultiplayerContext *_MpCtx)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, inst_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - inst_surface->w/2, WINDOW_HEIGHT - 60, inst_surface->w, inst_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH / 2 - inst_surface->w / 2, WINDOW_HEIGHT - 60, inst_surface->w, inst_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -2014,8 +2136,8 @@ void Renderer_DrawMultiplayerGame(Renderer *_Renderer, MultiplayerContext *_MpCt
 
     // Draw snakes with different colors
     SDL_Color player_colors[MAX_MULTIPLAYER_PLAYERS] = {
-        {255, 60, 60, 255},   // Red
-        {60, 120, 255, 255}   // Blue
+        {255, 60, 60, 255}, // Red
+        {60, 120, 255, 255} // Blue
     };
 
     for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
@@ -2023,9 +2145,9 @@ void Renderer_DrawMultiplayerGame(Renderer *_Renderer, MultiplayerContext *_MpCt
         if (_MpCtx->players[i].joined && _MpCtx->players[i].alive)
         {
             Renderer_DrawSnakeColored(_Renderer, &_MpCtx->players[i].snake,
-                                        player_colors[i].r,
-                                        player_colors[i].g,
-                                        player_colors[i].b);
+                                      player_colors[i].r,
+                                      player_colors[i].g,
+                                      player_colors[i].b);
         }
     }
 
@@ -2057,8 +2179,8 @@ void Renderer_DrawMultiplayerHudBorder(Renderer *_Renderer, MultiplayerContext *
 
     // Player colors matching game rendering
     SDL_Color player_colors[MAX_MULTIPLAYER_PLAYERS] = {
-        {255, 60, 60, 255},   // Red for P1
-        {60, 120, 255, 255}   // Blue for P2
+        {255, 60, 60, 255}, // Red for P1
+        {60, 120, 255, 255} // Blue for P2
     };
 
     // Draw P1 on left side of HUD
@@ -2076,11 +2198,10 @@ void Renderer_DrawMultiplayerHudBorder(Renderer *_Renderer, MultiplayerContext *
             {
                 // Position in top-left of HUD border
                 SDL_Rect dest = {
-                    30,  // Left side with padding
-                    (border_thickness - surface->h) / 2,  // Vertically centered in top border
+                    30,                                  // Left side with padding
+                    (border_thickness - surface->h) / 2, // Vertically centered in top border
                     surface->w,
-                    surface->h
-                };
+                    surface->h};
                 SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
                 SDL_DestroyTexture(texture);
             }
@@ -2103,11 +2224,10 @@ void Renderer_DrawMultiplayerHudBorder(Renderer *_Renderer, MultiplayerContext *
             {
                 // Position in top-right of HUD border
                 SDL_Rect dest = {
-                    WINDOW_WIDTH - surface->w - 30,  // Right side with padding
-                    (border_thickness - surface->h) / 2,  // Vertically centered in top border
+                    WINDOW_WIDTH - surface->w - 30,      // Right side with padding
+                    (border_thickness - surface->h) / 2, // Vertically centered in top border
                     surface->w,
-                    surface->h
-                };
+                    surface->h};
                 SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
                 SDL_DestroyTexture(texture);
             }
@@ -2121,7 +2241,7 @@ void Renderer_DrawMultiplayerHudBorder(Renderer *_Renderer, MultiplayerContext *
         char combo_text[64];
         snprintf(combo_text, sizeof(combo_text), "COMBO x%d   %.1fx MULTIPLIER", local_combo, local_multiplier);
 
-        SDL_Color combo_color = {255, 200, 50, 255};  // Gold color for combo
+        SDL_Color combo_color = {255, 200, 50, 255}; // Gold color for combo
         SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontSmall, combo_text, combo_color);
         if (surface)
         {
@@ -2133,8 +2253,7 @@ void Renderer_DrawMultiplayerHudBorder(Renderer *_Renderer, MultiplayerContext *
                     WINDOW_WIDTH / 2 - surface->w / 2,
                     WINDOW_HEIGHT - border_thickness + (border_thickness - surface->h) / 2,
                     surface->w,
-                    surface->h
-                };
+                    surface->h};
                 SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
                 SDL_DestroyTexture(texture);
             }
@@ -2164,8 +2283,7 @@ void Renderer_DrawModeSelection(Renderer *_Renderer, MultiplayerContext *_MpCtx)
                 WINDOW_WIDTH / 2 - titleSurface->w / 2,
                 150,
                 titleSurface->w,
-                titleSurface->h
-            };
+                titleSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, titleTexture, NULL, &titleRect);
             SDL_DestroyTexture(titleTexture);
         }
@@ -2194,8 +2312,7 @@ void Renderer_DrawModeSelection(Renderer *_Renderer, MultiplayerContext *_MpCtx)
                     WINDOW_WIDTH / 2 - surface->w / 2,
                     yPos,
                     surface->w,
-                    surface->h
-                };
+                    surface->h};
                 SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
                 SDL_DestroyTexture(texture);
             }
@@ -2215,8 +2332,7 @@ void Renderer_DrawModeSelection(Renderer *_Renderer, MultiplayerContext *_MpCtx)
                 WINDOW_WIDTH / 2 - instrSurface->w / 2,
                 WINDOW_HEIGHT - 100,
                 instrSurface->w,
-                instrSurface->h
-            };
+                instrSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, instrTexture, NULL, &instrRect);
             SDL_DestroyTexture(instrTexture);
         }
@@ -2246,8 +2362,7 @@ void Renderer_DrawReadyUp(Renderer *_Renderer, MultiplayerContext *_MpCtx)
                 WINDOW_WIDTH / 2 - titleSurface->w / 2,
                 100,
                 titleSurface->w,
-                titleSurface->h
-            };
+                titleSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, titleTexture, NULL, &titleRect);
             SDL_DestroyTexture(titleTexture);
         }
@@ -2277,8 +2392,7 @@ void Renderer_DrawReadyUp(Renderer *_Renderer, MultiplayerContext *_MpCtx)
                         WINDOW_WIDTH / 2 - 200,
                         yPos,
                         nameSurface->w,
-                        nameSurface->h
-                    };
+                        nameSurface->h};
                     SDL_RenderCopy(_Renderer->sdlRenderer, nameTexture, NULL, &nameRect);
                     SDL_DestroyTexture(nameTexture);
                 }
@@ -2296,8 +2410,7 @@ void Renderer_DrawReadyUp(Renderer *_Renderer, MultiplayerContext *_MpCtx)
                         WINDOW_WIDTH / 2 + 50,
                         yPos,
                         statusSurface->w,
-                        statusSurface->h
-                    };
+                        statusSurface->h};
                     SDL_RenderCopy(_Renderer->sdlRenderer, statusTexture, NULL, &statusRect);
                     SDL_DestroyTexture(statusTexture);
                 }
@@ -2310,10 +2423,10 @@ void Renderer_DrawReadyUp(Renderer *_Renderer, MultiplayerContext *_MpCtx)
 
     // Instructions
     const char *instructions = _MpCtx->isHost
-        ? "Space: Toggle Ready  |  Enter: Start (when all ready)  |  ESC: Cancel"
-        : "Space: Toggle Ready  |  ESC: Leave";
+                                   ? "SPACE READY  ENTER START  ESC LEAVE"
+                                   : "SPACE READY  ESC LEAVE";
 
-    SDL_Surface *instrSurface = TTF_RenderText_Solid(_Renderer->fontSmall, instructions, gray);
+    SDL_Surface *instrSurface = TTF_RenderText_Solid(_Renderer->fontSmall, instructions, white);
     if (instrSurface)
     {
         SDL_Texture *instrTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, instrSurface);
@@ -2323,8 +2436,7 @@ void Renderer_DrawReadyUp(Renderer *_Renderer, MultiplayerContext *_MpCtx)
                 WINDOW_WIDTH / 2 - instrSurface->w / 2,
                 WINDOW_HEIGHT - 100,
                 instrSurface->w,
-                instrSurface->h
-            };
+                instrSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, instrTexture, NULL, &instrRect);
             SDL_DestroyTexture(instrTexture);
         }
@@ -2340,7 +2452,8 @@ void Renderer_DrawTurnPlaying(Renderer *_Renderer, MultiplayerContext *_MpCtx)
 
     // Draw the local game (background, grid, snake, food, etc.)
     Renderer_DrawBackground(_Renderer, SDL_GetTicks());
-    Renderer_DrawGrid(_Renderer, 30);
+    Renderer_DrawBackgroundOverlay(_Renderer);
+    Renderer_DrawGrid(_Renderer, 2);
     Renderer_DrawWalls(_Renderer);
 
     if (_MpCtx->localGame.state == GAME_PLAYING)
@@ -2358,31 +2471,10 @@ void Renderer_DrawTurnPlaying(Renderer *_Renderer, MultiplayerContext *_MpCtx)
         }
     }
 
-    // Draw HUD border with score
-    Renderer_DrawHudBorderWithScore(_Renderer, _MpCtx->localGame.snake.score);
-
-    // Attempt counter overlay
-    SDL_Color white = {255, 255, 255, 255};
-    char attemptText[64];
-    snprintf(attemptText, sizeof(attemptText), "ATTEMPT %d/3", _MpCtx->currentAttempt + 1);
-
-    SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontMedium, attemptText, white);
-    if (surface)
-    {
-        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, surface);
-        if (texture)
-        {
-            SDL_Rect dest = {
-                WINDOW_WIDTH / 2 - surface->w / 2,
-                50,
-                surface->w,
-                surface->h
-            };
-            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
-            SDL_DestroyTexture(texture);
-        }
-        SDL_FreeSurface(surface);
-    }
+    // Draw HUD border - show attempt during countdown, score during gameplay
+    bool showAttempt = (_MpCtx->state == MP_STATE_COUNTDOWN);
+    Renderer_DrawHudBorderWithScore(_Renderer, _MpCtx->localGame.snake.score,
+                                    _MpCtx->currentAttempt, showAttempt);
 }
 
 /* Draw turn waiting screen */
@@ -2406,8 +2498,7 @@ void Renderer_DrawTurnWaiting(Renderer *_Renderer, MultiplayerContext *_MpCtx)
                 WINDOW_WIDTH / 2 - titleSurface->w / 2,
                 150,
                 titleSurface->w,
-                titleSurface->h
-            };
+                titleSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, titleTexture, NULL, &titleRect);
             SDL_DestroyTexture(titleTexture);
         }
@@ -2436,8 +2527,7 @@ void Renderer_DrawTurnWaiting(Renderer *_Renderer, MultiplayerContext *_MpCtx)
                         WINDOW_WIDTH / 2 - surface->w / 2,
                         yPos,
                         surface->w,
-                        surface->h
-                    };
+                        surface->h};
                     SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
                     SDL_DestroyTexture(texture);
                 }
@@ -2465,8 +2555,7 @@ void Renderer_DrawTurnWaiting(Renderer *_Renderer, MultiplayerContext *_MpCtx)
                     WINDOW_WIDTH / 2 - surface->w / 2,
                     yPos + 60,
                     surface->w,
-                    surface->h
-                };
+                    surface->h};
                 SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
                 SDL_DestroyTexture(texture);
             }
@@ -2505,18 +2594,20 @@ void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx)
     {
         for (int j = 0; j < playerCount - i - 1; j++)
         {
-            if (_MpCtx->players[sortedIndices[j]].bestScore < _MpCtx->players[sortedIndices[j+1]].bestScore)
+            if (_MpCtx->players[sortedIndices[j]].bestScore < _MpCtx->players[sortedIndices[j + 1]].bestScore)
             {
                 int temp = sortedIndices[j];
-                sortedIndices[j] = sortedIndices[j+1];
-                sortedIndices[j+1] = temp;
+                sortedIndices[j] = sortedIndices[j + 1];
+                sortedIndices[j + 1] = temp;
             }
         }
     }
 
     // Clamp result page index
-    if (_MpCtx->resultPageIndex < 0) _MpCtx->resultPageIndex = 0;
-    if (_MpCtx->resultPageIndex >= playerCount) _MpCtx->resultPageIndex = playerCount - 1;
+    if (_MpCtx->resultPageIndex < 0)
+        _MpCtx->resultPageIndex = 0;
+    if (_MpCtx->resultPageIndex >= playerCount)
+        _MpCtx->resultPageIndex = playerCount - 1;
 
     // Get current player to display
     int displayIdx = sortedIndices[_MpCtx->resultPageIndex];
@@ -2533,34 +2624,47 @@ void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx)
                 WINDOW_WIDTH / 2 - titleSurface->w / 2,
                 50,
                 titleSurface->w,
-                titleSurface->h
-            };
+                titleSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, titleTexture, NULL, &titleRect);
             SDL_DestroyTexture(titleTexture);
         }
         SDL_FreeSurface(titleSurface);
     }
 
-    // Medal (animated)
+    // Medal (animated) - only for top 4 players
     unsigned int tick = SDL_GetTicks();
     int medalFrame = (tick / 80) % MEDAL_FRAMES;
     SDL_Texture *medalTexture = NULL;
     SDL_Color nameColor = white;
 
-    if (placement == 1) {
+    // Only top 4 players get medals
+    if (placement == 1)
+    {
         medalTexture = _Renderer->medalPlatinum[medalFrame];
         nameColor = platinum;
-    } else if (placement == 2) {
+    }
+    else if (placement == 2)
+    {
         medalTexture = _Renderer->medalGold[medalFrame];
         nameColor = gold;
-    } else if (placement == 3) {
+    }
+    else if (placement == 3)
+    {
         medalTexture = _Renderer->medalSilver[medalFrame];
         nameColor = silver;
-    } else {
+    }
+    else if (placement == 4)
+    {
         medalTexture = _Renderer->medalBronze[medalFrame];
         nameColor = bronze;
     }
+    else
+    {
+        // Players 5+ get no medal, just gray text
+        nameColor = gray;
+    }
 
+    // Only render medal if we have one (top 4 only)
     if (medalTexture)
     {
         int medalSize = 120;
@@ -2568,17 +2672,21 @@ void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx)
             WINDOW_WIDTH / 2 - medalSize / 2,
             120,
             medalSize,
-            medalSize
-        };
+            medalSize};
         SDL_RenderCopy(_Renderer->sdlRenderer, medalTexture, NULL, &medalRect);
     }
 
     // Placement text
     char placementText[32];
     const char *suffix = "TH";
-    if (placement == 1) suffix = "ST";
-    else if (placement == 2) suffix = "ND";
-    else if (placement == 3) suffix = "RD";
+    if (placement == 1)
+        suffix = "ST";
+    else if (placement == 2)
+        suffix = "ND";
+    else if (placement == 3)
+        suffix = "RD";
+    else if (placement == 4)
+        suffix = "TH";
     snprintf(placementText, sizeof(placementText), "%d%s PLACE", placement, suffix);
 
     SDL_Surface *placeSurface = TTF_RenderText_Solid(_Renderer->fontMedium, placementText, nameColor);
@@ -2591,8 +2699,7 @@ void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx)
                 WINDOW_WIDTH / 2 - placeSurface->w / 2,
                 255,
                 placeSurface->w,
-                placeSurface->h
-            };
+                placeSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, placeTexture, NULL, &placeRect);
             SDL_DestroyTexture(placeTexture);
         }
@@ -2610,8 +2717,7 @@ void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx)
                 WINDOW_WIDTH / 2 - nameSurface->w / 2,
                 295,
                 nameSurface->w,
-                nameSurface->h
-            };
+                nameSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, nameTexture, NULL, &nameRect);
             SDL_DestroyTexture(nameTexture);
         }
@@ -2632,8 +2738,7 @@ void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx)
                 WINDOW_WIDTH / 2 - bestSurface->w / 2,
                 330,
                 bestSurface->w,
-                bestSurface->h
-            };
+                bestSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, bestTexture, NULL, &bestRect);
             SDL_DestroyTexture(bestTexture);
         }
@@ -2662,8 +2767,7 @@ void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx)
                     WINDOW_WIDTH / 2 - surface->w / 2,
                     yPos,
                     surface->w,
-                    surface->h
-                };
+                    surface->h};
                 SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
                 SDL_DestroyTexture(texture);
             }
@@ -2687,7 +2791,7 @@ void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx)
                 SDL_Texture *leftTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, leftSurface);
                 if (leftTexture)
                 {
-                    SDL_Rect leftRect = { 50, WINDOW_HEIGHT / 2 - 30, leftSurface->w, leftSurface->h };
+                    SDL_Rect leftRect = {50, WINDOW_HEIGHT / 2 - 30, leftSurface->w, leftSurface->h};
                     SDL_RenderCopy(_Renderer->sdlRenderer, leftTexture, NULL, &leftRect);
                     SDL_DestroyTexture(leftTexture);
                 }
@@ -2704,7 +2808,7 @@ void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx)
                 SDL_Texture *rightTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, rightSurface);
                 if (rightTexture)
                 {
-                    SDL_Rect rightRect = { WINDOW_WIDTH - 80, WINDOW_HEIGHT / 2 - 30, rightSurface->w, rightSurface->h };
+                    SDL_Rect rightRect = {WINDOW_WIDTH - 80, WINDOW_HEIGHT / 2 - 30, rightSurface->w, rightSurface->h};
                     SDL_RenderCopy(_Renderer->sdlRenderer, rightTexture, NULL, &rightRect);
                     SDL_DestroyTexture(rightTexture);
                 }
@@ -2712,31 +2816,12 @@ void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx)
             }
         }
 
-        // Page indicator
-        char pageText[32];
-        snprintf(pageText, sizeof(pageText), "%d / %d", _MpCtx->resultPageIndex + 1, playerCount);
-        SDL_Surface *pageSurface = TTF_RenderText_Solid(_Renderer->fontSmall, pageText, gray);
-        if (pageSurface)
-        {
-            SDL_Texture *pageTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, pageSurface);
-            if (pageTexture)
-            {
-                SDL_Rect pageRect = {
-                    WINDOW_WIDTH / 2 - pageSurface->w / 2,
-                    WINDOW_HEIGHT - 110,
-                    pageSurface->w,
-                    pageSurface->h
-                };
-                SDL_RenderCopy(_Renderer->sdlRenderer, pageTexture, NULL, &pageRect);
-                SDL_DestroyTexture(pageTexture);
-            }
-            SDL_FreeSurface(pageSurface);
-        }
+        // Page indicator removed as per user request
     }
 
     // Instructions
     SDL_Surface *instrSurface = TTF_RenderText_Solid(_Renderer->fontSmall,
-        "Left/Right: Navigate  |  Enter: Lobby  |  ESC: Menu", white);
+                                                     "Left/Right: Navigate  |  Enter: Lobby  |  ESC: Menu", white);
     if (instrSurface)
     {
         SDL_Texture *instrTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, instrSurface);
@@ -2746,8 +2831,7 @@ void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx)
                 WINDOW_WIDTH / 2 - instrSurface->w / 2,
                 WINDOW_HEIGHT - 30,
                 instrSurface->w,
-                instrSurface->h
-            };
+                instrSurface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, instrTexture, NULL, &instrRect);
             SDL_DestroyTexture(instrTexture);
         }
@@ -2772,11 +2856,10 @@ void Renderer_DrawScoreboard(Renderer *_Renderer, Scoreboard *_Scoreboard, unsig
         if (title_tex)
         {
             SDL_Rect title_dest = {
-                WINDOW_WIDTH/2 - title_surf->w/2,
+                WINDOW_WIDTH / 2 - title_surf->w / 2,
                 40,
                 title_surf->w,
-                title_surf->h
-            };
+                title_surf->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, title_tex, NULL, &title_dest);
             SDL_DestroyTexture(title_tex);
         }
@@ -2815,10 +2898,9 @@ void Renderer_DrawScoreboard(Renderer *_Renderer, Scoreboard *_Scoreboard, unsig
             // Scale medals to 64x64
             SDL_Rect medal_dest = {
                 50,
-                y - 32,  // Center vertically
+                y - 32, // Center vertically
                 64,
-                64
-            };
+                64};
             SDL_RenderCopy(_Renderer->sdlRenderer, medal_texture, NULL, &medal_dest);
         }
 
@@ -2837,8 +2919,7 @@ void Renderer_DrawScoreboard(Renderer *_Renderer, Scoreboard *_Scoreboard, unsig
                     130,
                     y - 20,
                     rank_surf->w,
-                    rank_surf->h
-                };
+                    rank_surf->h};
                 SDL_RenderCopy(_Renderer->sdlRenderer, rank_tex, NULL, &rank_dest);
                 SDL_DestroyTexture(rank_tex);
             }
@@ -2856,8 +2937,7 @@ void Renderer_DrawScoreboard(Renderer *_Renderer, Scoreboard *_Scoreboard, unsig
                     130,
                     y + 5,
                     name_surf->w,
-                    name_surf->h
-                };
+                    name_surf->h};
                 SDL_RenderCopy(_Renderer->sdlRenderer, name_tex, NULL, &name_dest);
                 SDL_DestroyTexture(name_tex);
             }
@@ -2878,8 +2958,7 @@ void Renderer_DrawScoreboard(Renderer *_Renderer, Scoreboard *_Scoreboard, unsig
                     WINDOW_WIDTH - score_surf->w - 50,
                     y - 15,
                     score_surf->w,
-                    score_surf->h
-                };
+                    score_surf->h};
                 SDL_RenderCopy(_Renderer->sdlRenderer, score_tex, NULL, &score_dest);
                 SDL_DestroyTexture(score_tex);
             }
@@ -2889,18 +2968,17 @@ void Renderer_DrawScoreboard(Renderer *_Renderer, Scoreboard *_Scoreboard, unsig
 
     // Instructions at bottom
     SDL_Color gray = {150, 150, 150, 255};
-    SDL_Surface *inst_surf = TTF_RenderText_Solid(_Renderer->fontSmall, "ESC BACK", gray);
+    SDL_Surface *inst_surf = TTF_RenderText_Solid(_Renderer->fontSmall, "ESC BACK", white);
     if (inst_surf)
     {
         SDL_Texture *inst_tex = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, inst_surf);
         if (inst_tex)
         {
             SDL_Rect inst_dest = {
-                WINDOW_WIDTH/2 - inst_surf->w/2,
+                WINDOW_WIDTH / 2 - inst_surf->w / 2,
                 WINDOW_HEIGHT - 60,
                 inst_surf->w,
-                inst_surf->h
-            };
+                inst_surf->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, inst_tex, NULL, &inst_dest);
             SDL_DestroyTexture(inst_tex);
         }
@@ -2910,9 +2988,9 @@ void Renderer_DrawScoreboard(Renderer *_Renderer, Scoreboard *_Scoreboard, unsig
 
 /* Main frame rendering - handles all game states */
 void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_MpCtx,
-                         Scoreboard *_Scoreboard, unsigned int _CurrentTime, int _MainMenuSelection, void *_Audio)
+                        Scoreboard *_Scoreboard, unsigned int _CurrentTime, int _MainMenuSelection, void *_Audio)
 {
-    (void)_Audio;  // Used in multiplayer for chat sounds
+    (void)_Audio; // Used in multiplayer for chat sounds
 
     // Clear screen
     Renderer_Clear(_Renderer);
@@ -2932,7 +3010,11 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
     Renderer_DrawBackgroundOverlay(_Renderer);
 
     // Draw based on state
-    if (_Game->state == GAME_MAIN_MENU)
+    if (_Game->state == GAME_LOADING)
+    {
+        Renderer_DrawLoadingScreen(_Renderer, _Game->loadingProgress, _CurrentTime);
+    }
+    else if (_Game->state == GAME_MAIN_MENU)
     {
         Renderer_DrawMainMenu(_Renderer, _MainMenuSelection);
     }
@@ -2993,18 +3075,18 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
             // "GAME OVER" title - blink if highscore
             SDL_Color white = {255, 255, 255, 255};
             SDL_Color blink_colors[] = {
-                {255, 100, 100, 255},  // Red
-                {255, 200, 100, 255},  // Orange
-                {255, 255, 100, 255},  // Yellow
-                {100, 255, 100, 255},  // Green
-                {100, 200, 255, 255},  // Cyan
-                {200, 100, 255, 255}   // Purple
+                {255, 100, 100, 255}, // Red
+                {255, 200, 100, 255}, // Orange
+                {255, 255, 100, 255}, // Yellow
+                {100, 255, 100, 255}, // Green
+                {100, 200, 255, 255}, // Cyan
+                {200, 100, 255, 255}  // Purple
             };
 
             SDL_Color title_color = white;
             if (_Game->isHighscore)
             {
-                int blink_phase = (_CurrentTime / 250) % 6;  // Blink faster for excitement
+                int blink_phase = (_CurrentTime / 250) % 6; // Blink faster for excitement
                 title_color = blink_colors[blink_phase];
             }
 
@@ -3015,11 +3097,10 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
                 if (title_texture)
                 {
                     SDL_Rect title_dest = {
-                        WINDOW_WIDTH/2 - title_surface->w/2,
-                        WINDOW_HEIGHT/2 - 80,
+                        WINDOW_WIDTH / 2 - title_surface->w / 2,
+                        WINDOW_HEIGHT / 2 - 80,
                         title_surface->w,
-                        title_surface->h
-                    };
+                        title_surface->h};
                     SDL_RenderCopy(_Renderer->sdlRenderer, title_texture, NULL, &title_dest);
                     SDL_DestroyTexture(title_texture);
                 }
@@ -3041,11 +3122,10 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
                     if (opt_texture)
                     {
                         SDL_Rect opt_dest = {
-                            WINDOW_WIDTH/2 - opt_surface->w/2,
-                            WINDOW_HEIGHT/2 + 20 + (i * 40),
+                            WINDOW_WIDTH / 2 - opt_surface->w / 2,
+                            WINDOW_HEIGHT / 2 + 20 + (i * 40),
                             opt_surface->w,
-                            opt_surface->h
-                        };
+                            opt_surface->h};
                         SDL_RenderCopy(_Renderer->sdlRenderer, opt_texture, NULL, &opt_dest);
                         SDL_DestroyTexture(opt_texture);
                     }
@@ -3151,9 +3231,12 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
         {
             // Show status message
             const char *status_msg = "Connecting...";
-            if (_MpCtx->state == MP_STATE_HOSTING) status_msg = "Hosting _Game...";
-            else if (_MpCtx->state == MP_STATE_JOINING) status_msg = "Joining _Game...";
-            else if (_MpCtx->state == MP_STATE_DISCONNECTED) status_msg = _MpCtx->errorMessage;
+            if (_MpCtx->state == MP_STATE_HOSTING)
+                status_msg = "Hosting _Game...";
+            else if (_MpCtx->state == MP_STATE_JOINING)
+                status_msg = "Joining _Game...";
+            else if (_MpCtx->state == MP_STATE_DISCONNECTED)
+                status_msg = _MpCtx->errorMessage;
 
             SDL_Color white = {255, 255, 255, 255};
             SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontMedium, status_msg, white);
@@ -3163,11 +3246,10 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
                 if (texture)
                 {
                     SDL_Rect dest = {
-                        WINDOW_WIDTH/2 - surface->w/2,
-                        WINDOW_HEIGHT/2 - surface->h/2,
+                        WINDOW_WIDTH / 2 - surface->w / 2,
+                        WINDOW_HEIGHT / 2 - surface->h / 2,
                         surface->w,
-                        surface->h
-                    };
+                        surface->h};
                     SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
                     SDL_DestroyTexture(texture);
                 }
@@ -3209,39 +3291,44 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
         else if (_MpCtx->state == MP_STATE_PLAYING || _MpCtx->state == MP_STATE_GAME_OVER ||
                  _MpCtx->state == MP_STATE_COUNTDOWN)
         {
-            Renderer_DrawMultiplayerGame(_Renderer, _MpCtx);
+            // For turn battle countdown, draw turn playing background
+            if (_MpCtx->state == MP_STATE_COUNTDOWN && _MpCtx->gameMode == MP_MODE_TURN_BATTLE)
+            {
+                Renderer_DrawTurnPlaying(_Renderer, _MpCtx);
+            }
+            else
+            {
+                Renderer_DrawMultiplayerGame(_Renderer, _MpCtx);
+            }
 
-            // Show minimalistic countdown (3, 2, 1) over game field
+            // Show intense countdown (3, 2, 1) with zoom-in and dark pulsing overlay
             if (_MpCtx->state == MP_STATE_COUNTDOWN)
             {
                 int seconds_left = (_MpCtx->gameStartTime - _CurrentTime) / 1000 + 1;
                 int time_in_second = _CurrentTime % 1000;
 
-                // Pulsating lightning effect overlay
+                // Very dark pulsing overlay - game barely visible until countdown reaches 1
                 SDL_SetRenderDrawBlendMode(_Renderer->sdlRenderer, SDL_BLENDMODE_BLEND);
 
-                // Create pulsating effect with sin wave
-                float pulse_cycle = (_CurrentTime % 300) / 300.0f;  // Fast pulse (300ms cycle)
-                float pulse_intensity = (sin(pulse_cycle * 3.14159f * 2) + 1.0f) / 2.0f; // 0.0 to 1.0
+                // Base darkness levels - much darker now
+                int base_alpha = 0;
+                if (seconds_left == 3)
+                    base_alpha = 240; // Almost black
+                else if (seconds_left == 2)
+                    base_alpha = 220; // Still very dark
+                else if (seconds_left == 1)
+                    base_alpha = 180 - (time_in_second * 180 / 1000); // Fade out during last second
 
-                // Add random lightning flashes
-                int flash_chance = _CurrentTime % 100;
-                float flash_intensity = (flash_chance < 10) ? 0.8f : 0.0f; // 10% chance of flash
+                // Strong pulsating effect
+                float pulse_cycle = (_CurrentTime % 250) / 250.0f;
+                float pulse = (sin(pulse_cycle * 3.14159f * 2) + 1.0f) / 2.0f;
+                int pulse_alpha = (int)(pulse * 40); // Strong pulse
 
-                // Combine pulse and flash
-                float combined_intensity = fmin(1.0f, pulse_intensity * 0.4f + flash_intensity);
+                int final_alpha = base_alpha + pulse_alpha;
+                if (final_alpha < 0) final_alpha = 0;
+                if (final_alpha > 255) final_alpha = 255;
 
-                int overlay_alpha = 255;
-                if (seconds_left == 1)
-                {
-                    // Fade from black (255) to transparent (0) during the last second
-                    overlay_alpha = 255 - (time_in_second * 255 / 1000);
-                    combined_intensity *= (overlay_alpha / 255.0f);
-                }
-
-                // Mix black with white lightning effect
-                int lightning_value = (int)(combined_intensity * 255);
-                SDL_SetRenderDrawColor(_Renderer->sdlRenderer, lightning_value, lightning_value, lightning_value, overlay_alpha);
+                SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 0, 0, 0, final_alpha);
                 SDL_Rect overlayRect = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
                 SDL_RenderFillRect(_Renderer->sdlRenderer, &overlayRect);
 
@@ -3255,11 +3342,10 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
 
                 if (countdown_text)
                 {
-                    // Clean white color
                     SDL_Color white = {255, 255, 255, 255};
 
-                    // Smooth pulse effect - grows from 0.6 to 1.2 scale over the second
-                    float pulse = 0.6f + 0.6f * (time_in_second / 1000.0f);
+                    // Zoom-in effect - starts big (2.5x) and shrinks to normal size (1.0x)
+                    float scale = 2.5f - (1.5f * (time_in_second / 1000.0f));
 
                     // Fade in effect at start of each second
                     int text_alpha = (time_in_second < 100) ? (time_in_second * 255 / 100) : 255;
@@ -3272,15 +3358,14 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
                         {
                             SDL_SetTextureAlphaMod(texture, text_alpha);
 
-                            int pulsed_w = (int)(surface->w * pulse);
-                            int pulsed_h = (int)(surface->h * pulse);
+                            int scaled_w = (int)(surface->w * scale);
+                            int scaled_h = (int)(surface->h * scale);
 
                             SDL_Rect dest = {
-                                WINDOW_WIDTH/2 - pulsed_w/2,
-                                WINDOW_HEIGHT/2 - pulsed_h/2,
-                                pulsed_w,
-                                pulsed_h
-                            };
+                                WINDOW_WIDTH / 2 - scaled_w / 2,
+                                WINDOW_HEIGHT / 2 - scaled_h / 2,
+                                scaled_w,
+                                scaled_h};
                             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
                             SDL_DestroyTexture(texture);
                         }
@@ -3329,11 +3414,10 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
                     if (title_texture)
                     {
                         SDL_Rect title_dest = {
-                            WINDOW_WIDTH/2 - title_surface->w/2,
-                            WINDOW_HEIGHT/2 - 80,
+                            WINDOW_WIDTH / 2 - title_surface->w / 2,
+                            WINDOW_HEIGHT / 2 - 80,
                             title_surface->w,
-                            title_surface->h
-                        };
+                            title_surface->h};
                         SDL_RenderCopy(_Renderer->sdlRenderer, title_texture, NULL, &title_dest);
                         SDL_DestroyTexture(title_texture);
                     }
@@ -3357,11 +3441,10 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
                             if (opt_texture)
                             {
                                 SDL_Rect opt_dest = {
-                                    WINDOW_WIDTH/2 - opt_surface->w/2,
-                                    WINDOW_HEIGHT/2 + 20 + (i * 40),
+                                    WINDOW_WIDTH / 2 - opt_surface->w / 2,
+                                    WINDOW_HEIGHT / 2 + 20 + (i * 40),
                                     opt_surface->w,
-                                    opt_surface->h
-                                };
+                                    opt_surface->h};
                                 SDL_RenderCopy(_Renderer->sdlRenderer, opt_texture, NULL, &opt_dest);
                                 SDL_DestroyTexture(opt_texture);
                             }
@@ -3380,11 +3463,10 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
                         if (wait_texture)
                         {
                             SDL_Rect wait_dest = {
-                                WINDOW_WIDTH/2 - wait_surface->w/2,
-                                WINDOW_HEIGHT/2 + 60,
+                                WINDOW_WIDTH / 2 - wait_surface->w / 2,
+                                WINDOW_HEIGHT / 2 + 60,
                                 wait_surface->w,
-                                wait_surface->h
-                            };
+                                wait_surface->h};
                             SDL_RenderCopy(_Renderer->sdlRenderer, wait_texture, NULL, &wait_dest);
                             SDL_DestroyTexture(wait_texture);
                         }

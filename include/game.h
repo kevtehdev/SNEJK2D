@@ -8,6 +8,7 @@
 #include <stdbool.h>
 
 typedef enum {
+    GAME_LOADING,        // Retro loading screen
     GAME_MAIN_MENU,      // Singleplayer / Multiplayer choice
     GAME_MODE_SELECT,    // Classic vs Power-Up mode selection
     GAME_NAME_INPUT,     // Name input before background selection
@@ -108,6 +109,10 @@ typedef struct {
     int xpToNextLevel;          // XP needed for next level
     bool levelUpActive;         // True when level-up effect is playing
     unsigned int levelUpStartTime; // When level-up effect started
+
+    // Loading screen
+    unsigned int loadingStartTime;  // When loading screen started
+    float loadingProgress;          // 0.0 to 1.0
 } Game;
 
 /* Initialize game state and all subsystems */

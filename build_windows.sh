@@ -3,74 +3,62 @@
 
 set -e
 
-# Directories
-SDL2_DIR="/tmp/SDL2-2.30.0/x86_64-w64-mingw32"
-SDL2_TTF_DIR="/tmp/SDL2_ttf-2.22.0/x86_64-w64-mingw32"
-SDL2_IMAGE_DIR="/tmp/SDL2_image-2.8.2/x86_64-w64-mingw32"
-SDL2_MIXER_DIR="/tmp/SDL2_mixer-2.8.0/x86_64-w64-mingw32"
+echo "Building SNEJK2D for Windows..."
+
+# SDL2 paths in /tmp
+SDL2_BASE="/tmp/SDL2-2.28.5/x86_64-w64-mingw32"
+SDL2_IMAGE_BASE="/tmp/SDL2_image-2.6.3/x86_64-w64-mingw32"
+SDL2_MIXER_BASE="/tmp/SDL2_mixer-2.6.3/x86_64-w64-mingw32"
+SDL2_TTF_BASE="/tmp/SDL2_ttf-2.20.2/x86_64-w64-mingw32"
 
 # Compiler
 CC=x86_64-w64-mingw32-gcc
 
-# Flags
-CFLAGS="-O2 -Wall -Wextra -std=c11"
-CFLAGS="$CFLAGS -I$SDL2_DIR/include/SDL2"
-CFLAGS="$CFLAGS -I$SDL2_DIR/include"
-CFLAGS="$CFLAGS -I$SDL2_TTF_DIR/include/SDL2"
-CFLAGS="$CFLAGS -I$SDL2_TTF_DIR/include"
-CFLAGS="$CFLAGS -I$SDL2_IMAGE_DIR/include/SDL2"
-CFLAGS="$CFLAGS -I$SDL2_IMAGE_DIR/include"
-CFLAGS="$CFLAGS -I$SDL2_MIXER_DIR/include/SDL2"
-CFLAGS="$CFLAGS -I$SDL2_MIXER_DIR/include"
-CFLAGS="$CFLAGS -Iinclude"
-CFLAGS="$CFLAGS -Isrc/mpapi/c_client/libs"
-CFLAGS="$CFLAGS -Isrc/mpapi/c_client/libs/jansson"
-CFLAGS="$CFLAGS -D_GNU_SOURCE"
-CFLAGS="$CFLAGS -DSDL_MAIN_HANDLED"
+# Include paths
+INCLUDES="-Iinclude"
+INCLUDES="$INCLUDES -I$SDL2_BASE/include -I$SDL2_BASE/include/SDL2"
+INCLUDES="$INCLUDES -I$SDL2_IMAGE_BASE/include -I$SDL2_IMAGE_BASE/include/SDL2"
+INCLUDES="$INCLUDES -I$SDL2_MIXER_BASE/include -I$SDL2_MIXER_BASE/include/SDL2"
+INCLUDES="$INCLUDES -I$SDL2_TTF_BASE/include -I$SDL2_TTF_BASE/include/SDL2"
 
-LDFLAGS="-L$SDL2_DIR/lib"
-LDFLAGS="$LDFLAGS -L$SDL2_TTF_DIR/lib"
-LDFLAGS="$LDFLAGS -L$SDL2_IMAGE_DIR/lib"
-LDFLAGS="$LDFLAGS -L$SDL2_MIXER_DIR/lib"
-LDFLAGS="$LDFLAGS -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf -lSDL2_image -lSDL2_mixer"
-LDFLAGS="$LDFLAGS -lws2_32 -lwinhttp -lpthread -lm -static-libgcc"
-LDFLAGS="$LDFLAGS -mwindows"
+# Library paths
+LIBS="-L$SDL2_BASE/lib"
+LIBS="$LIBS -L$SDL2_IMAGE_BASE/lib"
+LIBS="$LIBS -L$SDL2_MIXER_BASE/lib"
+LIBS="$LIBS -L$SDL2_TTF_BASE/lib"
+LIBS="$LIBS -lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf"
+LIBS="$LIBS -lws2_32 -liphlpapi -lpthread -mwindows"
 
-echo "Building SNEJK2D for Windows..."
+# Compiler flags
+CFLAGS="-O2 -Wall -std=c11"
 
-# Create build directory
-mkdir -p build_win
+# Source files
+SOURCES="src/main.c src/game.c src/snake.c src/renderer.c src/audio.c"
+SOURCES="$SOURCES src/multiplayer.c src/scoreboard.c src/settings.c src/input.c"
+SOURCES="$SOURCES src/mpapi/c_client/libs/mpapi.c"
+SOURCES="$SOURCES src/mpapi/c_client/libs/jansson/*.c"
 
-# Compile source files
+# Output
+OUTPUT="snejk2d.exe"
+
 echo "Compiling source files..."
-$CC $CFLAGS -c src/snake.c -o build_win/snake.o
-$CC $CFLAGS -c src/game.c -o build_win/game.o
-$CC $CFLAGS -c src/renderer.c -o build_win/renderer.o
-$CC $CFLAGS -c src/audio.c -o build_win/audio.o
-$CC $CFLAGS -c src/multiplayer.c -o build_win/multiplayer.o
-$CC $CFLAGS -c src/scoreboard.c -o build_win/scoreboard.o
-$CC $CFLAGS -c src/settings.c -o build_win/settings.o
-$CC $CFLAGS -c src/input.c -o build_win/input.o
-$CC $CFLAGS -c src/main.c -o build_win/main.o
+$CC $CFLAGS $INCLUDES $SOURCES $LIBS -o $OUTPUT
 
-# Compile mpapi
-echo "Compiling mpapi..."
-$CC $CFLAGS -c src/mpapi/c_client/libs/mpapi.c -o build_win/mpapi.o
+if [ -f "$OUTPUT" ]; then
+    echo "✓ Build complete: $OUTPUT"
 
-# Compile jansson
-echo "Compiling jansson..."
-for file in src/mpapi/c_client/libs/jansson/*.c; do
-    basename=$(basename "$file" .c)
-    $CC $CFLAGS -c "$file" -o "build_win/jansson_$basename.o"
-done
+    # Copy DLLs
+    echo "Copying required DLLs..."
+    cp $SDL2_BASE/bin/SDL2.dll .
+    cp $SDL2_IMAGE_BASE/bin/*.dll .
+    cp $SDL2_MIXER_BASE/bin/*.dll .
+    cp $SDL2_TTF_BASE/bin/*.dll .
 
-# Link
-echo "Linking..."
-$CC build_win/*.o -o snejk2d.exe $LDFLAGS
-
-# Copy DLLs
-echo "Copying required DLLs..."
-cp win64_deps/dlls/*.dll .
-
-echo "✓ Build complete: snejk2d.exe"
-echo "✓ DLLs copied"
+    echo "✓ Windows build complete!"
+    echo ""
+    echo "Files created:"
+    ls -lh snejk2d.exe *.dll | awk '{print "  " $9 " (" $5 ")"}'
+else
+    echo "✗ Build failed!"
+    exit 1
+fi

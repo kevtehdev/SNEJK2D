@@ -70,7 +70,7 @@ void Input_HandleNameInput(Game *_Game, SDL_Event *_Event)
     {
         if (_Event->key.keysym.sym == SDLK_ESCAPE)
         {
-            _Game->state = GAME_MODE_SELECT;  // Go back to mode select
+            _Game->state = GAME_MODE_SELECT; // Go back to mode select
         }
         else if (_Event->key.keysym.sym == SDLK_RETURN && _Game->playerNameLen > 0)
         {
@@ -103,12 +103,12 @@ void Input_HandleModeSelectInput(Game *_Game, SDL_Event *_Event)
         case SDLK_UP:
         case SDLK_w:
         case SDLK_LEFT:
-            _Game->modeSelection = 0;  // Classic
+            _Game->modeSelection = 0; // Classic
             break;
         case SDLK_DOWN:
         case SDLK_s:
         case SDLK_RIGHT:
-            _Game->modeSelection = 1;  // Power-Up
+            _Game->modeSelection = 1; // Power-Up
             break;
         case SDLK_RETURN:
         case SDLK_SPACE:
@@ -177,7 +177,7 @@ void Input_HandlePlayingInput(Game *_Game, SDL_Event *_Event)
             break;
         case SDLK_ESCAPE:
             _Game->state = GAME_PAUSED;
-            _Game->pauseMenuSelection = 0;  // Default to "Resume Game"
+            _Game->pauseMenuSelection = 0; // Default to "Resume Game"
             break;
         }
 
@@ -233,11 +233,11 @@ void Input_HandlePauseMenuInput(Game *_Game, SDL_Event *_Event)
         {
         case SDLK_UP:
         case SDLK_w:
-            _Game->pauseMenuSelection = 0;  // Resume Game
+            _Game->pauseMenuSelection = 0; // Resume Game
             break;
         case SDLK_DOWN:
         case SDLK_s:
-            _Game->pauseMenuSelection = 1;  // Exit to Main Menu
+            _Game->pauseMenuSelection = 1; // Exit to Main Menu
             break;
         case SDLK_RETURN:
         case SDLK_SPACE:
@@ -291,7 +291,7 @@ void Input_HandleOptionsInput(Game *_Game, SDL_Event *_Event, void *_Audio)
         case SDLK_RIGHT:
         case SDLK_d:
             // Toggle or adjust value
-            if (_Game->optionsSelection == 0)  // Menu Music
+            if (_Game->optionsSelection == 0) // Menu Music
             {
                 _Game->settings.menuMusicEnabled = !_Game->settings.menuMusicEnabled;
 
@@ -312,11 +312,11 @@ void Input_HandleOptionsInput(Game *_Game, SDL_Event *_Event, void *_Audio)
                     }
                 }
             }
-            else if (_Game->optionsSelection == 1)  // Game Music
+            else if (_Game->optionsSelection == 1) // Game Music
             {
                 _Game->settings.gameMusicEnabled = !_Game->settings.gameMusicEnabled;
             }
-            else if (_Game->optionsSelection == 2)  // Grid Alpha
+            else if (_Game->optionsSelection == 2) // Grid Alpha
             {
                 if (_Event->key.keysym.sym == SDLK_LEFT || _Event->key.keysym.sym == SDLK_a)
                 {
@@ -331,7 +331,7 @@ void Input_HandleOptionsInput(Game *_Game, SDL_Event *_Event, void *_Audio)
                         _Game->settings.gridAlpha = 10;
                 }
             }
-            else if (_Game->optionsSelection == 3)  // Brightness
+            else if (_Game->optionsSelection == 3) // Brightness
             {
                 if (_Event->key.keysym.sym == SDLK_LEFT || _Event->key.keysym.sym == SDLK_a)
                 {
@@ -346,14 +346,14 @@ void Input_HandleOptionsInput(Game *_Game, SDL_Event *_Event, void *_Audio)
                         _Game->settings.brightness = 2.0f;
                 }
             }
-            else if (_Game->optionsSelection == 4)  // Combo Effects
+            else if (_Game->optionsSelection == 4) // Combo Effects
             {
                 _Game->settings.comboEffects = !_Game->settings.comboEffects;
             }
             break;
         case SDLK_RETURN:
         case SDLK_SPACE:
-            if (_Game->optionsSelection == 5)  // Reset to defaults
+            if (_Game->optionsSelection == 5) // Reset to defaults
             {
                 Settings_Init(&_Game->settings);
                 Settings_Save(&_Game->settings);
@@ -383,7 +383,7 @@ void Input_HandleOptionsInput(Game *_Game, SDL_Event *_Event, void *_Audio)
         }
     }
 
-    (void)_Audio;  // Reserved for audio volume updates
+    (void)_Audio; // Reserved for audio volume updates
 }
 
 void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event, Game *_Game)
@@ -396,6 +396,14 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
     {
         if (_MpCtx->state == MP_STATE_CHATTING && _MpCtx->chatInputLen < 127)
         {
+            // Skip 'c' from the key that opened chat
+            if (_MpCtx->skipNextChatChar && strcmp(_Event->text.text, "c") == 0)
+            {
+                _MpCtx->skipNextChatChar = false;
+                return;
+            }
+            _MpCtx->skipNextChatChar = false;
+
             size_t len = strlen(_Event->text.text);
             if (_MpCtx->chatInputLen + len < 127)
             {
@@ -405,6 +413,14 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
         }
         else if (_MpCtx->state == MP_STATE_CHANGING_NICK && _MpCtx->nickInputLen < 31)
         {
+            // Skip 'n' from the key that opened nick change
+            if (_MpCtx->skipNextNickChar && strcmp(_Event->text.text, "n") == 0)
+            {
+                _MpCtx->skipNextNickChar = false;
+                return;
+            }
+            _MpCtx->skipNextNickChar = false;
+
             size_t len = strlen(_Event->text.text);
             if (_MpCtx->nickInputLen + len < 31)
             {
@@ -479,11 +495,11 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
             // UP/DOWN for game mode selection
             else if (_Event->key.keysym.sym == SDLK_UP)
             {
-                _MpCtx->modeSelection = 0;  // REALTIME
+                _MpCtx->modeSelection = 0; // REALTIME
             }
             else if (_Event->key.keysym.sym == SDLK_DOWN)
             {
-                _MpCtx->modeSelection = 1;  // TURN BATTLE
+                _MpCtx->modeSelection = 1; // TURN BATTLE
             }
             else if (_MpCtx->roomNameLen < 32)
             {
@@ -537,6 +553,7 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
                 _MpCtx->state = MP_STATE_CHATTING;
                 _MpCtx->chatInputLen = 0;
                 memset(_MpCtx->chatInput, 0, sizeof(_MpCtx->chatInput));
+                _MpCtx->skipNextChatChar = true;  // Skip the 'c' from this keypress
                 break;
             case SDLK_n:
                 // Enter nick change mode
@@ -544,6 +561,7 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
                 _MpCtx->state = MP_STATE_CHANGING_NICK;
                 _MpCtx->nickInputLen = 0;
                 memset(_MpCtx->nickInput, 0, sizeof(_MpCtx->nickInput));
+                _MpCtx->skipNextNickChar = true;  // Skip the 'n' from this keypress
                 // Pre-fill with current name
                 int localIdx = Multiplayer_GetLocalPlayerIndex(_MpCtx);
                 if (localIdx >= 0)
@@ -812,7 +830,7 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
                         Multiplayer_RestartGame(_MpCtx);
                     }
                 }
-                else  // QUIT GAME selected
+                else // QUIT GAME selected
                 {
                     // Broadcast disconnect to clients if host
                     if (_MpCtx->isHost && _MpCtx->api)
@@ -1009,5 +1027,5 @@ void Input_HandleInput(Game *_Game, SDL_Event *_Event, MultiplayerContext **_MpC
         }
     }
 
-    (void)_Scoreboard;  // Reserved for future use
+    (void)_Scoreboard; // Reserved for future use
 }
