@@ -43,7 +43,6 @@
 // Power-Up Spawn Rates (percentage) - Power-Up Mode only
 
 #define POWERUP_SCORE_MULT_RATE 5       // 5% - Uncommon
-#define POWERUP_SHIELD_RATE 10          // 10% - Common
 #define POWERUP_SPEED_BOOST_RATE 10     // 10% - Common
 #define POWERUP_GOLDEN_APPLE_RATE 15    // 15% - Very common
 

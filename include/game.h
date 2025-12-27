@@ -39,7 +39,6 @@ typedef enum {
     POWERUP_NONE = 0,
     POWERUP_GOLDEN_APPLE,
     POWERUP_SPEED_BOOST,
-    POWERUP_SHIELD,
     POWERUP_SCORE_MULTIPLIER
 } PowerUpType;
 
@@ -53,7 +52,6 @@ typedef struct {
 
 // Active power-up effects
 typedef struct {
-    bool hasShield;
     bool speedBoostActive;
     bool scoreMultiplierActive;
     unsigned int speedBoostEndTime;

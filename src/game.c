@@ -51,7 +51,6 @@ void Game_Init(Game *_Game)
         _Game->powerUps[i].active = false;
         _Game->powerUps[i].type = POWERUP_NONE;
     }
-    _Game->powerUpStatus.hasShield = false;
     _Game->powerUpStatus.speedBoostActive = false;
     _Game->powerUpStatus.scoreMultiplierActive = false;
     _Game->powerUpStatus.normalSpeed = BASE_SPEED;
@@ -117,9 +116,8 @@ void Game_SpawnFood(Game *_Game)
     if (_Game->gameMode == MODE_POWERUP)
     {
         // Create array of power-up types for guaranteed variety
-        PowerUpType powerUpPool[4] = {
+        PowerUpType powerUpPool[3] = {
             POWERUP_GOLDEN_APPLE,
-            POWERUP_SHIELD,
             POWERUP_SPEED_BOOST,
             POWERUP_SCORE_MULTIPLIER
         };
@@ -141,7 +139,7 @@ void Game_SpawnFood(Game *_Game)
                 continue; // No free slot
 
             // Pick random power-up type from pool (guaranteed valid)
-            PowerUpType spawnType = powerUpPool[rand() % 4];
+            PowerUpType spawnType = powerUpPool[rand() % 3];
 
             // Find valid position for power-up
             valid = false;
@@ -320,22 +318,12 @@ void Game_Update(Game *_Game)
             }
         }
 
-        // If collision detected, check shield
+        // If collision detected, game over
         if (wouldHitWall || wouldHitSelf)
         {
-            if (_Game->powerUpStatus.hasShield)
-            {
-                // Shield absorbs the hit!
-                _Game->powerUpStatus.hasShield = false;
-                // Don't move into collision, just consume shield and continue
-                return;
-            }
-            else
-            {
-                _Game->snake.alive = false;
-                _Game->state = GAME_OVER;
-                return;
-            }
+            _Game->snake.alive = false;
+            _Game->state = GAME_OVER;
+            return;
         }
 
         // Safe to move now
@@ -433,18 +421,6 @@ void Game_Update(Game *_Game)
                         updateComboMultiplier(_Game);
                         break;
 
-                    case POWERUP_SHIELD:
-                        // +30 points × combo, +2 combo
-                        totalMult = _Game->comboMultiplier;
-                        if (_Game->powerUpStatus.scoreMultiplierActive)
-                            totalMult *= 10.0f;
-
-                        _Game->powerUpStatus.hasShield = true;
-                        _Game->snake.score += (int)(30 * totalMult);
-                        _Game->comboCount += 2;
-                        updateComboMultiplier(_Game);
-                        break;
-
                     case POWERUP_SCORE_MULTIPLIER:
                         // +50 points × combo, +3 combo, activate 10x multiplier
                         totalMult = _Game->comboMultiplier;
@@ -511,7 +487,6 @@ void Game_Reset(Game *_Game)
         _Game->powerUps[i].active = false;
         _Game->powerUps[i].type = POWERUP_NONE;
     }
-    _Game->powerUpStatus.hasShield = false;
     _Game->powerUpStatus.speedBoostActive = false;
     _Game->powerUpStatus.scoreMultiplierActive = false;
     _Game->powerUpStatus.normalSpeed = BASE_SPEED;
