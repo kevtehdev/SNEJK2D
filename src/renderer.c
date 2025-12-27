@@ -473,7 +473,7 @@ static void drawHudWithPulse(Renderer *_Renderer, int _ComboCount, float _Multip
     SDL_RenderFillRect(_Renderer->sdlRenderer, &right);
 }
 
-void Renderer_DrawHudBorderWithScore(Renderer *_Renderer, int _Score)
+void Renderer_DrawHudBorderWithScore(Renderer *_Renderer, int _Score, int _Attempt, bool _ShowAttempt)
 {
     if (!_Renderer || !_Renderer->sdlRenderer)
         return;
@@ -494,12 +494,19 @@ void Renderer_DrawHudBorderWithScore(Renderer *_Renderer, int _Score)
     SDL_Rect right = {WINDOW_WIDTH - borderThickness, 0, borderThickness, WINDOW_HEIGHT};
     SDL_RenderFillRect(_Renderer->sdlRenderer, &right);
 
-    /* Draw SCORE text in the top HUD border */
-    char scoreText[32];
-    snprintf(scoreText, sizeof(scoreText), "SCORE: %d", _Score);
+    /* Draw text in the top HUD border - either ATTEMPT or SCORE */
+    char hudText[32];
+    if (_ShowAttempt)
+    {
+        snprintf(hudText, sizeof(hudText), "ATTEMPT %d/3", _Attempt + 1);
+    }
+    else
+    {
+        snprintf(hudText, sizeof(hudText), "SCORE: %d", _Score);
+    }
 
     SDL_Color white = {255, 255, 255, 255};
-    SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontSmall, scoreText, white);
+    SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontSmall, hudText, white);
 
     if (surface)
     {
@@ -1863,30 +1870,13 @@ void Renderer_DrawMultiplayerLobby(Renderer *_Renderer, MultiplayerContext *_MpC
         SDL_FreeSurface(mode_surface);
     }
 
-    // Player list
+    // Player list - only show players who have joined
     int y_offset = _MpCtx->isHost ? 220 : 185;
     for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
     {
+        // Skip players who haven't joined
         if (!_MpCtx->players[i].joined)
-        {
-            // Show empty slot
-            char player_text[64];
-            snprintf(player_text, sizeof(player_text), "P%d: WAITING...", i + 1);
-            SDL_Surface *player_surface = TTF_RenderText_Solid(_Renderer->fontMedium, player_text, gray);
-            if (player_surface)
-            {
-                SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, player_surface);
-                if (texture)
-                {
-                    SDL_Rect dest = {WINDOW_WIDTH / 2 - player_surface->w / 2, y_offset, player_surface->w, player_surface->h};
-                    SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
-                    SDL_DestroyTexture(texture);
-                }
-                SDL_FreeSurface(player_surface);
-            }
-            y_offset += 50;
             continue;
-        }
 
         // Show player
         char player_text[96];
@@ -2377,10 +2367,10 @@ void Renderer_DrawReadyUp(Renderer *_Renderer, MultiplayerContext *_MpCtx)
 
     // Instructions
     const char *instructions = _MpCtx->isHost
-                                   ? "Space: Toggle Ready  |  Enter: Start (when all ready)  |  ESC: Cancel"
-                                   : "Space: Toggle Ready  |  ESC: Leave";
+                                   ? "SPACE READY  ENTER START  ESC LEAVE"
+                                   : "SPACE READY  ESC LEAVE";
 
-    SDL_Surface *instrSurface = TTF_RenderText_Solid(_Renderer->fontSmall, instructions, gray);
+    SDL_Surface *instrSurface = TTF_RenderText_Solid(_Renderer->fontSmall, instructions, white);
     if (instrSurface)
     {
         SDL_Texture *instrTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, instrSurface);
@@ -2424,30 +2414,10 @@ void Renderer_DrawTurnPlaying(Renderer *_Renderer, MultiplayerContext *_MpCtx)
         }
     }
 
-    // Draw HUD border with score
-    Renderer_DrawHudBorderWithScore(_Renderer, _MpCtx->localGame.snake.score);
-
-    // Attempt counter overlay
-    SDL_Color white = {255, 255, 255, 255};
-    char attemptText[64];
-    snprintf(attemptText, sizeof(attemptText), "ATTEMPT %d/3", _MpCtx->currentAttempt + 1);
-
-    SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontMedium, attemptText, white);
-    if (surface)
-    {
-        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, surface);
-        if (texture)
-        {
-            SDL_Rect dest = {
-                WINDOW_WIDTH / 2 - surface->w / 2,
-                50,
-                surface->w,
-                surface->h};
-            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
-            SDL_DestroyTexture(texture);
-        }
-        SDL_FreeSurface(surface);
-    }
+    // Draw HUD border - show attempt during countdown, score during gameplay
+    bool showAttempt = (_MpCtx->state == MP_STATE_COUNTDOWN);
+    Renderer_DrawHudBorderWithScore(_Renderer, _MpCtx->localGame.snake.score,
+                                    _MpCtx->currentAttempt, showAttempt);
 }
 
 /* Draw turn waiting screen */
@@ -2604,12 +2574,13 @@ void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx)
         SDL_FreeSurface(titleSurface);
     }
 
-    // Medal (animated)
+    // Medal (animated) - only for top 4 players
     unsigned int tick = SDL_GetTicks();
     int medalFrame = (tick / 80) % MEDAL_FRAMES;
     SDL_Texture *medalTexture = NULL;
     SDL_Color nameColor = white;
 
+    // Only top 4 players get medals
     if (placement == 1)
     {
         medalTexture = _Renderer->medalPlatinum[medalFrame];
@@ -2625,12 +2596,18 @@ void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx)
         medalTexture = _Renderer->medalSilver[medalFrame];
         nameColor = silver;
     }
-    else
+    else if (placement == 4)
     {
         medalTexture = _Renderer->medalBronze[medalFrame];
         nameColor = bronze;
     }
+    else
+    {
+        // Players 5+ get no medal, just gray text
+        nameColor = gray;
+    }
 
+    // Only render medal if we have one (top 4 only)
     if (medalTexture)
     {
         int medalSize = 120;
@@ -2651,6 +2628,8 @@ void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx)
         suffix = "ND";
     else if (placement == 3)
         suffix = "RD";
+    else if (placement == 4)
+        suffix = "TH";
     snprintf(placementText, sizeof(placementText), "%d%s PLACE", placement, suffix);
 
     SDL_Surface *placeSurface = TTF_RenderText_Solid(_Renderer->fontMedium, placementText, nameColor);
@@ -2780,25 +2759,7 @@ void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx)
             }
         }
 
-        // Page indicator
-        char pageText[32];
-        snprintf(pageText, sizeof(pageText), "%d / %d", _MpCtx->resultPageIndex + 1, playerCount);
-        SDL_Surface *pageSurface = TTF_RenderText_Solid(_Renderer->fontSmall, pageText, gray);
-        if (pageSurface)
-        {
-            SDL_Texture *pageTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, pageSurface);
-            if (pageTexture)
-            {
-                SDL_Rect pageRect = {
-                    WINDOW_WIDTH / 2 - pageSurface->w / 2,
-                    WINDOW_HEIGHT - 110,
-                    pageSurface->w,
-                    pageSurface->h};
-                SDL_RenderCopy(_Renderer->sdlRenderer, pageTexture, NULL, &pageRect);
-                SDL_DestroyTexture(pageTexture);
-            }
-            SDL_FreeSurface(pageSurface);
-        }
+        // Page indicator removed as per user request
     }
 
     // Instructions
@@ -3207,7 +3168,15 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
         else if (_MpCtx->state == MP_STATE_PLAYING || _MpCtx->state == MP_STATE_GAME_OVER ||
                  _MpCtx->state == MP_STATE_COUNTDOWN)
         {
-            Renderer_DrawMultiplayerGame(_Renderer, _MpCtx);
+            // For turn battle countdown, draw turn playing background
+            if (_MpCtx->state == MP_STATE_COUNTDOWN && _MpCtx->gameMode == MP_MODE_TURN_BATTLE)
+            {
+                Renderer_DrawTurnPlaying(_Renderer, _MpCtx);
+            }
+            else
+            {
+                Renderer_DrawMultiplayerGame(_Renderer, _MpCtx);
+            }
 
             // Show minimalistic countdown (3, 2, 1) over game field
             if (_MpCtx->state == MP_STATE_COUNTDOWN)

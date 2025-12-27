@@ -8,7 +8,7 @@
 #include "../src/mpapi/c_client/libs/jansson/jansson.h"
 #include <stdbool.h>
 
-#define MAX_MULTIPLAYER_PLAYERS 2  // 1v1 only
+#define MAX_MULTIPLAYER_PLAYERS 10  // Up to 10 players for turn battle
 #define MAX_BROWSEABLE_GAMES 10
 
 // Menu options
