@@ -1218,7 +1218,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, menuMusic_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - menuMusic_surface->w/2, 180, menuMusic_surface->w, menuMusic_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH/2 - menuMusic_surface->w/2, 150, menuMusic_surface->w, menuMusic_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1236,7 +1236,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, gameMusic_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - gameMusic_surface->w/2, 230, gameMusic_surface->w, gameMusic_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH/2 - gameMusic_surface->w/2, 200, gameMusic_surface->w, gameMusic_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1257,7 +1257,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, grid_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - grid_surface->w/2, 280, grid_surface->w, grid_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH/2 - grid_surface->w/2, 250, grid_surface->w, grid_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1275,7 +1275,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, bright_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - bright_surface->w/2, 305, bright_surface->w, bright_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH/2 - bright_surface->w/2, 300, bright_surface->w, bright_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1293,7 +1293,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, combo_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - combo_surface->w/2, 345, combo_surface->w, combo_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH/2 - combo_surface->w/2, 350, combo_surface->w, combo_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
@@ -1309,7 +1309,7 @@ void Renderer_DrawOptions(Renderer *_Renderer, Game *_Game)
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, reset_surface);
         if (texture)
         {
-            SDL_Rect dest = {WINDOW_WIDTH/2 - reset_surface->w/2, 395, reset_surface->w, reset_surface->h};
+            SDL_Rect dest = {WINDOW_WIDTH/2 - reset_surface->w/2, 400, reset_surface->w, reset_surface->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
             SDL_DestroyTexture(texture);
         }
