@@ -25,7 +25,6 @@ Traditional snake gameplay. Eat food, grow longer, avoid walls and yourself.
 Enhanced gameplay with collectible power-ups and a level system:
 - **Golden Apple** (yellow): +3 length
 - **Speed Boost** (cyan): temporary speed increase
-- **Shield** (blue): one-hit protection
 - **Score Multiplier** (magenta): 10x points for 5 seconds
 
 Gain 10 XP per food eaten. Level up at 100, 150, 200, 250 XP and beyond.

@@ -769,18 +769,9 @@ void Renderer_DrawPowerUp(Renderer *_Renderer, PowerUp *_PowerUp)
         SDL_RenderFillRect(_Renderer->sdlRenderer, &inner);
         break;
 
-    case POWERUP_SHIELD:
-        // Silver/white shield
-        SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 192, 192, 192, 255);
-        SDL_RenderFillRect(_Renderer->sdlRenderer, &rect);
-        // Outer border pulsing
-        SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 255, 255, 255, (int)(pulse * 255));
-        SDL_RenderDrawRect(_Renderer->sdlRenderer, &rect);
-        break;
-
     case POWERUP_SPEED_BOOST:
-        // Yellow lightning
-        SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 255, 255, 0, 255);
+        // Cyan lightning
+        SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 0, 255, 255, 255);
         SDL_RenderFillRect(_Renderer->sdlRenderer, &rect);
         // Flashing white effect
         if ((int)(pulse * 2) % 2 == 0)
