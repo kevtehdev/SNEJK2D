@@ -396,6 +396,14 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
     {
         if (_MpCtx->state == MP_STATE_CHATTING && _MpCtx->chatInputLen < 127)
         {
+            // Skip 'c' from the key that opened chat
+            if (_MpCtx->skipNextChatChar && strcmp(_Event->text.text, "c") == 0)
+            {
+                _MpCtx->skipNextChatChar = false;
+                return;
+            }
+            _MpCtx->skipNextChatChar = false;
+
             size_t len = strlen(_Event->text.text);
             if (_MpCtx->chatInputLen + len < 127)
             {
@@ -405,6 +413,14 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
         }
         else if (_MpCtx->state == MP_STATE_CHANGING_NICK && _MpCtx->nickInputLen < 31)
         {
+            // Skip 'n' from the key that opened nick change
+            if (_MpCtx->skipNextNickChar && strcmp(_Event->text.text, "n") == 0)
+            {
+                _MpCtx->skipNextNickChar = false;
+                return;
+            }
+            _MpCtx->skipNextNickChar = false;
+
             size_t len = strlen(_Event->text.text);
             if (_MpCtx->nickInputLen + len < 31)
             {
@@ -537,6 +553,7 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
                 _MpCtx->state = MP_STATE_CHATTING;
                 _MpCtx->chatInputLen = 0;
                 memset(_MpCtx->chatInput, 0, sizeof(_MpCtx->chatInput));
+                _MpCtx->skipNextChatChar = true;  // Skip the 'c' from this keypress
                 break;
             case SDLK_n:
                 // Enter nick change mode
@@ -544,6 +561,7 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
                 _MpCtx->state = MP_STATE_CHANGING_NICK;
                 _MpCtx->nickInputLen = 0;
                 memset(_MpCtx->nickInput, 0, sizeof(_MpCtx->nickInput));
+                _MpCtx->skipNextNickChar = true;  // Skip the 'n' from this keypress
                 // Pre-fill with current name
                 int localIdx = Multiplayer_GetLocalPlayerIndex(_MpCtx);
                 if (localIdx >= 0)

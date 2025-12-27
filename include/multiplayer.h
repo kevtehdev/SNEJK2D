@@ -134,11 +134,13 @@ typedef struct {
     int chatCount;
     char chatInput[128];
     int chatInputLen;
+    bool skipNextChatChar;       // Skip 'c' when chat first opens
     MultiplayerState previousState;  // State to return to after chat/nick change
 
     // Nick change
     char nickInput[32];
     int nickInputLen;
+    bool skipNextNickChar;       // Skip 'n' when nick change first opens
 
     // Turn battle mode
     MultiplayerGameMode gameMode;
