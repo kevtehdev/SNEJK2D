@@ -21,8 +21,7 @@ release_tmp/
 *.swo
 *~
 
-# Build scripts (optional, keep if needed)
-build_windows.sh
+# Build scripts are now functional and tracked
 
 # Runtime files
 settings.conf

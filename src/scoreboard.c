@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <jansson.h>
+#include "../src/mpapi/c_client/libs/jansson/jansson.h"
 
 #define SCOREBOARD_FILE "scoreboard.json"
 
