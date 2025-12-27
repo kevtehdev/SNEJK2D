@@ -17,6 +17,12 @@ typedef enum {
     MP_MENU_JOIN = 1
 } MultiplayerMenuOption;
 
+// Game modes
+typedef enum {
+    MP_MODE_TURN_BATTLE = 0, // Turn-based 3 attempts
+    MP_MODE_1VS1 = 1         // Classic 1v1 realtime
+} MultiplayerGameMode;
+
 // Multiplayer states
 typedef enum {
     MP_STATE_MENU,           // Choosing host/join
@@ -27,8 +33,13 @@ typedef enum {
     MP_STATE_LOBBY,          // Waiting for opponent
     MP_STATE_CHATTING,       // Chat mode in lobby (C key)
     MP_STATE_CHANGING_NICK,  // Changing nickname in lobby (N key)
+    MP_STATE_MODE_SELECT,    // Selecting game mode (host only)
+    MP_STATE_READY_UP,       // Players ready up for turn battle
     MP_STATE_COUNTDOWN,      // 3-2-1 countdown
     MP_STATE_PLAYING,        // Active game
+    MP_STATE_TURN_PLAYING,   // Playing local turn (turn battle)
+    MP_STATE_TURN_WAITING,   // Waiting for other players to finish
+    MP_STATE_TURN_RESULTS,   // Showing turn battle results
     MP_STATE_GAME_OVER,      // Game ended
     MP_STATE_DISCONNECTED    // Connection lost
 } MultiplayerState;
@@ -40,7 +51,15 @@ typedef struct {
     int playerCount;
     int maxPlayers;
     int mapId;  // Background/map index
+    MultiplayerGameMode gameMode;  // Game mode (REALTIME or TURN BATTLE)
 } BrowseableGame;
+
+// Turn battle attempt result
+typedef struct {
+    int score;
+    int length;
+    unsigned int survivalTime;
+} TurnAttempt;
 
 // Player in multiplayer
 typedef struct {
@@ -57,6 +76,12 @@ typedef struct {
     int comboCount;
     unsigned int lastFoodTime;
     float comboMultiplier;
+
+    // Turn battle data
+    TurnAttempt attempts[3];
+    int completedAttempts;
+    bool turnFinished;
+    int bestScore;
 } MultiplayerPlayer;
 
 // Multiplayer game context
@@ -64,6 +89,9 @@ typedef struct {
     // mpapi
     mpapi *api;
     int listenerId;
+
+    // Audio
+    void *audio;  // AudioSystem pointer (void* to avoid circular dependency)
 
     // Game state
     MultiplayerState state;
@@ -111,6 +139,14 @@ typedef struct {
     // Nick change
     char nickInput[32];
     int nickInputLen;
+
+    // Turn battle mode
+    MultiplayerGameMode gameMode;
+    int modeSelection;           // 0 = Realtime, 1 = Turn Battle
+    int currentAttempt;          // Current attempt number (0-2)
+    unsigned int attemptStartTime;
+    Game localGame;              // Local game instance for turn battle
+    int resultPageIndex;         // Current page in results view (0 = winner, 1 = 2nd place, etc.)
 } MultiplayerContext;
 
 // Lifecycle
@@ -139,5 +175,12 @@ void Multiplayer_UpdateCountdown(MultiplayerContext *_Ctx, unsigned int _Current
 // Serialization
 json_t* Multiplayer_SerializeState(MultiplayerContext *_Ctx);
 void Multiplayer_DeserializeState(MultiplayerContext *_Ctx, json_t *_Data);
+
+// Turn battle operations
+void Multiplayer_StartTurnAttempt(MultiplayerContext *_Ctx);
+void Multiplayer_FinishTurnAttempt(MultiplayerContext *_Ctx);
+void Multiplayer_SubmitTurnResults(MultiplayerContext *_Ctx);
+bool Multiplayer_AllTurnsFinished(MultiplayerContext *_Ctx);
+void Multiplayer_CalculateTurnWinner(MultiplayerContext *_Ctx);
 
 #endif

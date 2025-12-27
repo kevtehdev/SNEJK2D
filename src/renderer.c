@@ -1,4 +1,5 @@
 #include "../include/renderer.h"
+#include "../include/audio.h"
 #include <SDL2/SDL_image.h>
 #include <stdio.h>
 #include <math.h>
@@ -1059,7 +1060,7 @@ void Renderer_DrawMainMenu(Renderer *_Renderer, int _Selection)
     }
 
     // Multiplayer option
-    const char *mp_text = _Selection == 1 ? "> MULTIPLAYER 1VS1 " : "  MULTIPLAYER 1VS1  ";
+    const char *mp_text = _Selection == 1 ? "> MULTIPLAYER" : "  MULTIPLAYER  ";
     SDL_Color mp_color = _Selection == 1 ? green : gray;
     SDL_Surface *mp_surface = TTF_RenderText_Solid(_Renderer->fontMedium, mp_text, mp_color);
     if (mp_surface)
@@ -1468,7 +1469,43 @@ void Renderer_DrawMultiplayerRoomName(Renderer *_Renderer, MultiplayerContext *_
         SDL_FreeSurface(input_surface);
     }
 
-    y += 60;
+    y += 50;
+
+    // Game mode selection label (moved up before map)
+    SDL_Surface *mode_label = TTF_RenderText_Solid(_Renderer->fontSmall, "MODE", white);
+    if (mode_label)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, mode_label);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - mode_label->w/2, y, mode_label->w, mode_label->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(mode_label);
+    }
+
+    y += 30;
+
+    // Game mode display
+    const char *mode_names[] = {"TURN BATTLE", "1VS1"};
+    char mode_display[64];
+    snprintf(mode_display, sizeof(mode_display), "< %s >", mode_names[_MpCtx->modeSelection]);
+
+    SDL_Surface *mode_surface = TTF_RenderText_Solid(_Renderer->fontMedium, mode_display, green);
+    if (mode_surface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, mode_surface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - mode_surface->w/2, y, mode_surface->w, mode_surface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(mode_surface);
+    }
+
+    y += 50;
 
     // Map selection label
     SDL_Surface *map_label = TTF_RenderText_Solid(_Renderer->fontSmall, "MAP", white);
@@ -1504,9 +1541,9 @@ void Renderer_DrawMultiplayerRoomName(Renderer *_Renderer, MultiplayerContext *_
         SDL_FreeSurface(map_surface);
     }
 
-    // Instructions
+    // Instructions (shortened to fit screen)
     SDL_Surface *inst_surface = TTF_RenderText_Solid(_Renderer->fontSmall,
-        "LEFT RIGHT MAP   ENTER CREATE   ESC CANCEL", white);
+        "MODE UP DOWN  MAP LEFT RIGHT  ENTER CREATE", white);
     if (inst_surface)
     {
         SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, inst_surface);
@@ -1656,7 +1693,7 @@ void Renderer_DrawMultiplayerLobby(Renderer *_Renderer, MultiplayerContext *_MpC
         SDL_FreeSurface(title_surface);
     }
 
-    // Session ID
+    // Session ID and Game Mode
     if (_MpCtx->isHost)
     {
         char session_text[32];
@@ -1675,8 +1712,25 @@ void Renderer_DrawMultiplayerLobby(Renderer *_Renderer, MultiplayerContext *_MpC
         }
     }
 
+    // Game Mode display (for both host and client)
+    const char *mode_names[] = {"TURN BATTLE", "1VS1"};
+    char mode_text[64];
+    snprintf(mode_text, sizeof(mode_text), "MODE: %s", mode_names[_MpCtx->gameMode]);
+    SDL_Surface *mode_surface = TTF_RenderText_Solid(_Renderer->fontSmall, mode_text, white);
+    if (mode_surface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, mode_surface);
+        if (texture)
+        {
+            SDL_Rect dest = {WINDOW_WIDTH/2 - mode_surface->w/2, _MpCtx->isHost ? 180 : 145, mode_surface->w, mode_surface->h};
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(mode_surface);
+    }
+
     // Player list
-    int y_offset = 200;
+    int y_offset = _MpCtx->isHost ? 220 : 185;
     for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
     {
         if (!_MpCtx->players[i].joined)
@@ -2033,6 +2087,618 @@ void Renderer_DrawMultiplayerHudBorder(Renderer *_Renderer, MultiplayerContext *
     }
 }
 
+/* Draw mode selection screen (host only) */
+void Renderer_DrawModeSelection(Renderer *_Renderer, MultiplayerContext *_MpCtx)
+{
+    if (!_Renderer || !_Renderer->sdlRenderer || !_MpCtx)
+        return;
+
+    SDL_Color white = {255, 255, 255, 255};
+    SDL_Color green = {100, 255, 100, 255};
+    SDL_Color gray = {150, 150, 150, 255};
+
+    // Title
+    SDL_Surface *titleSurface = TTF_RenderText_Solid(_Renderer->fontLarge, "SELECT GAME MODE", white);
+    if (titleSurface)
+    {
+        SDL_Texture *titleTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, titleSurface);
+        if (titleTexture)
+        {
+            SDL_Rect titleRect = {
+                WINDOW_WIDTH / 2 - titleSurface->w / 2,
+                150,
+                titleSurface->w,
+                titleSurface->h
+            };
+            SDL_RenderCopy(_Renderer->sdlRenderer, titleTexture, NULL, &titleRect);
+            SDL_DestroyTexture(titleTexture);
+        }
+        SDL_FreeSurface(titleSurface);
+    }
+
+    // Mode options
+    const char *modes[] = {"TURN BATTLE", "1VS1"};
+    int yPos = 300;
+
+    for (int i = 0; i < 2; i++)
+    {
+        SDL_Color color = (_MpCtx->modeSelection == i) ? green : gray;
+        const char *prefix = (_MpCtx->modeSelection == i) ? "> " : "  ";
+
+        char modeText[64];
+        snprintf(modeText, sizeof(modeText), "%s%s", prefix, modes[i]);
+
+        SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontMedium, modeText, color);
+        if (surface)
+        {
+            SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, surface);
+            if (texture)
+            {
+                SDL_Rect dest = {
+                    WINDOW_WIDTH / 2 - surface->w / 2,
+                    yPos,
+                    surface->w,
+                    surface->h
+                };
+                SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+                SDL_DestroyTexture(texture);
+            }
+            SDL_FreeSurface(surface);
+        }
+        yPos += 80;
+    }
+
+    // Instructions
+    SDL_Surface *instrSurface = TTF_RenderText_Solid(_Renderer->fontSmall, "Arrow Keys: Select  |  Enter: Confirm", gray);
+    if (instrSurface)
+    {
+        SDL_Texture *instrTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, instrSurface);
+        if (instrTexture)
+        {
+            SDL_Rect instrRect = {
+                WINDOW_WIDTH / 2 - instrSurface->w / 2,
+                WINDOW_HEIGHT - 100,
+                instrSurface->w,
+                instrSurface->h
+            };
+            SDL_RenderCopy(_Renderer->sdlRenderer, instrTexture, NULL, &instrRect);
+            SDL_DestroyTexture(instrTexture);
+        }
+        SDL_FreeSurface(instrSurface);
+    }
+}
+
+/* Draw ready-up screen for turn battle */
+void Renderer_DrawReadyUp(Renderer *_Renderer, MultiplayerContext *_MpCtx)
+{
+    if (!_Renderer || !_Renderer->sdlRenderer || !_MpCtx)
+        return;
+
+    SDL_Color white = {255, 255, 255, 255};
+    SDL_Color green = {100, 255, 100, 255};
+    SDL_Color red = {255, 100, 100, 255};
+    SDL_Color gray = {150, 150, 150, 255};
+
+    // Title
+    SDL_Surface *titleSurface = TTF_RenderText_Solid(_Renderer->fontLarge, "TURN BATTLE - READY UP", white);
+    if (titleSurface)
+    {
+        SDL_Texture *titleTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, titleSurface);
+        if (titleTexture)
+        {
+            SDL_Rect titleRect = {
+                WINDOW_WIDTH / 2 - titleSurface->w / 2,
+                100,
+                titleSurface->w,
+                titleSurface->h
+            };
+            SDL_RenderCopy(_Renderer->sdlRenderer, titleTexture, NULL, &titleRect);
+            SDL_DestroyTexture(titleTexture);
+        }
+        SDL_FreeSurface(titleSurface);
+    }
+
+    // Player list with ready status
+    int yPos = 250;
+    for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
+    {
+        if (_MpCtx->players[i].joined)
+        {
+            char playerText[128];
+            const char *readyStatus = _MpCtx->players[i].ready ? "[READY]" : "[NOT READY]";
+            SDL_Color statusColor = _MpCtx->players[i].ready ? green : red;
+
+            snprintf(playerText, sizeof(playerText), "%s", _MpCtx->players[i].name);
+
+            // Player name
+            SDL_Surface *nameSurface = TTF_RenderText_Solid(_Renderer->fontMedium, playerText, white);
+            if (nameSurface)
+            {
+                SDL_Texture *nameTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, nameSurface);
+                if (nameTexture)
+                {
+                    SDL_Rect nameRect = {
+                        WINDOW_WIDTH / 2 - 200,
+                        yPos,
+                        nameSurface->w,
+                        nameSurface->h
+                    };
+                    SDL_RenderCopy(_Renderer->sdlRenderer, nameTexture, NULL, &nameRect);
+                    SDL_DestroyTexture(nameTexture);
+                }
+                SDL_FreeSurface(nameSurface);
+            }
+
+            // Ready status
+            SDL_Surface *statusSurface = TTF_RenderText_Solid(_Renderer->fontMedium, readyStatus, statusColor);
+            if (statusSurface)
+            {
+                SDL_Texture *statusTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, statusSurface);
+                if (statusTexture)
+                {
+                    SDL_Rect statusRect = {
+                        WINDOW_WIDTH / 2 + 50,
+                        yPos,
+                        statusSurface->w,
+                        statusSurface->h
+                    };
+                    SDL_RenderCopy(_Renderer->sdlRenderer, statusTexture, NULL, &statusRect);
+                    SDL_DestroyTexture(statusTexture);
+                }
+                SDL_FreeSurface(statusSurface);
+            }
+
+            yPos += 60;
+        }
+    }
+
+    // Instructions
+    const char *instructions = _MpCtx->isHost
+        ? "Space: Toggle Ready  |  Enter: Start (when all ready)  |  ESC: Cancel"
+        : "Space: Toggle Ready  |  ESC: Leave";
+
+    SDL_Surface *instrSurface = TTF_RenderText_Solid(_Renderer->fontSmall, instructions, gray);
+    if (instrSurface)
+    {
+        SDL_Texture *instrTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, instrSurface);
+        if (instrTexture)
+        {
+            SDL_Rect instrRect = {
+                WINDOW_WIDTH / 2 - instrSurface->w / 2,
+                WINDOW_HEIGHT - 100,
+                instrSurface->w,
+                instrSurface->h
+            };
+            SDL_RenderCopy(_Renderer->sdlRenderer, instrTexture, NULL, &instrRect);
+            SDL_DestroyTexture(instrTexture);
+        }
+        SDL_FreeSurface(instrSurface);
+    }
+}
+
+/* Draw turn playing screen */
+void Renderer_DrawTurnPlaying(Renderer *_Renderer, MultiplayerContext *_MpCtx)
+{
+    if (!_Renderer || !_Renderer->sdlRenderer || !_MpCtx)
+        return;
+
+    // Draw the local game (background, grid, snake, food, etc.)
+    Renderer_DrawBackground(_Renderer, SDL_GetTicks());
+    Renderer_DrawGrid(_Renderer, 30);
+    Renderer_DrawWalls(_Renderer);
+
+    if (_MpCtx->localGame.state == GAME_PLAYING)
+    {
+        Renderer_DrawSnake(_Renderer, &_MpCtx->localGame.snake);
+        Renderer_DrawFood(_Renderer, &_MpCtx->localGame.food);
+
+        // Draw power-ups if any
+        for (int i = 0; i < MAX_POWERUPS; i++)
+        {
+            if (_MpCtx->localGame.powerUps[i].active)
+            {
+                Renderer_DrawPowerUp(_Renderer, &_MpCtx->localGame.powerUps[i]);
+            }
+        }
+    }
+
+    // Draw HUD border with score
+    Renderer_DrawHudBorderWithScore(_Renderer, _MpCtx->localGame.snake.score);
+
+    // Attempt counter overlay
+    SDL_Color white = {255, 255, 255, 255};
+    char attemptText[64];
+    snprintf(attemptText, sizeof(attemptText), "ATTEMPT %d/3", _MpCtx->currentAttempt + 1);
+
+    SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontMedium, attemptText, white);
+    if (surface)
+    {
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, surface);
+        if (texture)
+        {
+            SDL_Rect dest = {
+                WINDOW_WIDTH / 2 - surface->w / 2,
+                50,
+                surface->w,
+                surface->h
+            };
+            SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(surface);
+    }
+}
+
+/* Draw turn waiting screen */
+void Renderer_DrawTurnWaiting(Renderer *_Renderer, MultiplayerContext *_MpCtx)
+{
+    if (!_Renderer || !_Renderer->sdlRenderer || !_MpCtx)
+        return;
+
+    SDL_Color white = {255, 255, 255, 255};
+    SDL_Color green = {100, 255, 100, 255};
+    SDL_Color gray = {150, 150, 150, 255};
+
+    // Title
+    SDL_Surface *titleSurface = TTF_RenderText_Solid(_Renderer->fontLarge, "WAITING FOR PLAYERS...", white);
+    if (titleSurface)
+    {
+        SDL_Texture *titleTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, titleSurface);
+        if (titleTexture)
+        {
+            SDL_Rect titleRect = {
+                WINDOW_WIDTH / 2 - titleSurface->w / 2,
+                150,
+                titleSurface->w,
+                titleSurface->h
+            };
+            SDL_RenderCopy(_Renderer->sdlRenderer, titleTexture, NULL, &titleRect);
+            SDL_DestroyTexture(titleTexture);
+        }
+        SDL_FreeSurface(titleSurface);
+    }
+
+    // Show player completion status
+    int yPos = 300;
+    for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
+    {
+        if (_MpCtx->players[i].joined)
+        {
+            char statusText[128];
+            const char *status = _MpCtx->players[i].turnFinished ? "FINISHED" : "PLAYING...";
+            SDL_Color statusColor = _MpCtx->players[i].turnFinished ? green : gray;
+
+            snprintf(statusText, sizeof(statusText), "%s: %s", _MpCtx->players[i].name, status);
+
+            SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontMedium, statusText, statusColor);
+            if (surface)
+            {
+                SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, surface);
+                if (texture)
+                {
+                    SDL_Rect dest = {
+                        WINDOW_WIDTH / 2 - surface->w / 2,
+                        yPos,
+                        surface->w,
+                        surface->h
+                    };
+                    SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+                    SDL_DestroyTexture(texture);
+                }
+                SDL_FreeSurface(surface);
+            }
+
+            yPos += 60;
+        }
+    }
+
+    // Your best score
+    int localIdx = Multiplayer_GetLocalPlayerIndex(_MpCtx);
+    if (localIdx >= 0)
+    {
+        char scoreText[128];
+        snprintf(scoreText, sizeof(scoreText), "Your Best Score: %d", _MpCtx->players[localIdx].bestScore);
+
+        SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontMedium, scoreText, green);
+        if (surface)
+        {
+            SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, surface);
+            if (texture)
+            {
+                SDL_Rect dest = {
+                    WINDOW_WIDTH / 2 - surface->w / 2,
+                    yPos + 60,
+                    surface->w,
+                    surface->h
+                };
+                SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+                SDL_DestroyTexture(texture);
+            }
+            SDL_FreeSurface(surface);
+        }
+    }
+}
+
+/* Draw turn battle results */
+void Renderer_DrawTurnResults(Renderer *_Renderer, MultiplayerContext *_MpCtx)
+{
+    if (!_Renderer || !_Renderer->sdlRenderer || !_MpCtx)
+        return;
+
+    SDL_Color white = {255, 255, 255, 255};
+    SDL_Color green = {100, 255, 100, 255};
+    SDL_Color platinum = {229, 228, 226, 255};
+    SDL_Color gold = {255, 215, 0, 255};
+    SDL_Color silver = {192, 192, 192, 255};
+    SDL_Color bronze = {205, 127, 50, 255};
+    SDL_Color gray = {150, 150, 150, 255};
+
+    // Sort players by best score (descending)
+    int sortedIndices[MAX_MULTIPLAYER_PLAYERS];
+    int playerCount = 0;
+    for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
+    {
+        if (_MpCtx->players[i].joined)
+        {
+            sortedIndices[playerCount++] = i;
+        }
+    }
+
+    // Bubble sort by bestScore (descending)
+    for (int i = 0; i < playerCount - 1; i++)
+    {
+        for (int j = 0; j < playerCount - i - 1; j++)
+        {
+            if (_MpCtx->players[sortedIndices[j]].bestScore < _MpCtx->players[sortedIndices[j+1]].bestScore)
+            {
+                int temp = sortedIndices[j];
+                sortedIndices[j] = sortedIndices[j+1];
+                sortedIndices[j+1] = temp;
+            }
+        }
+    }
+
+    // Clamp result page index
+    if (_MpCtx->resultPageIndex < 0) _MpCtx->resultPageIndex = 0;
+    if (_MpCtx->resultPageIndex >= playerCount) _MpCtx->resultPageIndex = playerCount - 1;
+
+    // Get current player to display
+    int displayIdx = sortedIndices[_MpCtx->resultPageIndex];
+    int placement = _MpCtx->resultPageIndex + 1;
+
+    // Title
+    SDL_Surface *titleSurface = TTF_RenderText_Solid(_Renderer->fontLarge, "TURN BATTLE RESULTS", white);
+    if (titleSurface)
+    {
+        SDL_Texture *titleTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, titleSurface);
+        if (titleTexture)
+        {
+            SDL_Rect titleRect = {
+                WINDOW_WIDTH / 2 - titleSurface->w / 2,
+                50,
+                titleSurface->w,
+                titleSurface->h
+            };
+            SDL_RenderCopy(_Renderer->sdlRenderer, titleTexture, NULL, &titleRect);
+            SDL_DestroyTexture(titleTexture);
+        }
+        SDL_FreeSurface(titleSurface);
+    }
+
+    // Medal (animated)
+    unsigned int tick = SDL_GetTicks();
+    int medalFrame = (tick / 80) % MEDAL_FRAMES;
+    SDL_Texture *medalTexture = NULL;
+    SDL_Color nameColor = white;
+
+    if (placement == 1) {
+        medalTexture = _Renderer->medalPlatinum[medalFrame];
+        nameColor = platinum;
+    } else if (placement == 2) {
+        medalTexture = _Renderer->medalGold[medalFrame];
+        nameColor = gold;
+    } else if (placement == 3) {
+        medalTexture = _Renderer->medalSilver[medalFrame];
+        nameColor = silver;
+    } else {
+        medalTexture = _Renderer->medalBronze[medalFrame];
+        nameColor = bronze;
+    }
+
+    if (medalTexture)
+    {
+        int medalSize = 120;
+        SDL_Rect medalRect = {
+            WINDOW_WIDTH / 2 - medalSize / 2,
+            120,
+            medalSize,
+            medalSize
+        };
+        SDL_RenderCopy(_Renderer->sdlRenderer, medalTexture, NULL, &medalRect);
+    }
+
+    // Placement text
+    char placementText[32];
+    const char *suffix = "TH";
+    if (placement == 1) suffix = "ST";
+    else if (placement == 2) suffix = "ND";
+    else if (placement == 3) suffix = "RD";
+    snprintf(placementText, sizeof(placementText), "%d%s PLACE", placement, suffix);
+
+    SDL_Surface *placeSurface = TTF_RenderText_Solid(_Renderer->fontMedium, placementText, nameColor);
+    if (placeSurface)
+    {
+        SDL_Texture *placeTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, placeSurface);
+        if (placeTexture)
+        {
+            SDL_Rect placeRect = {
+                WINDOW_WIDTH / 2 - placeSurface->w / 2,
+                255,
+                placeSurface->w,
+                placeSurface->h
+            };
+            SDL_RenderCopy(_Renderer->sdlRenderer, placeTexture, NULL, &placeRect);
+            SDL_DestroyTexture(placeTexture);
+        }
+        SDL_FreeSurface(placeSurface);
+    }
+
+    // Player name
+    SDL_Surface *nameSurface = TTF_RenderText_Solid(_Renderer->fontMedium, _MpCtx->players[displayIdx].name, nameColor);
+    if (nameSurface)
+    {
+        SDL_Texture *nameTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, nameSurface);
+        if (nameTexture)
+        {
+            SDL_Rect nameRect = {
+                WINDOW_WIDTH / 2 - nameSurface->w / 2,
+                295,
+                nameSurface->w,
+                nameSurface->h
+            };
+            SDL_RenderCopy(_Renderer->sdlRenderer, nameTexture, NULL, &nameRect);
+            SDL_DestroyTexture(nameTexture);
+        }
+        SDL_FreeSurface(nameSurface);
+    }
+
+    // Best score (right under player name)
+    char bestText[128];
+    snprintf(bestText, sizeof(bestText), "BEST SCORE: %d", _MpCtx->players[displayIdx].bestScore);
+
+    SDL_Surface *bestSurface = TTF_RenderText_Solid(_Renderer->fontMedium, bestText, green);
+    if (bestSurface)
+    {
+        SDL_Texture *bestTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, bestSurface);
+        if (bestTexture)
+        {
+            SDL_Rect bestRect = {
+                WINDOW_WIDTH / 2 - bestSurface->w / 2,
+                330,
+                bestSurface->w,
+                bestSurface->h
+            };
+            SDL_RenderCopy(_Renderer->sdlRenderer, bestTexture, NULL, &bestRect);
+            SDL_DestroyTexture(bestTexture);
+        }
+        SDL_FreeSurface(bestSurface);
+    }
+
+    // Show all 3 attempts
+    int yPos = 350;
+    for (int attempt = 0; attempt < 3; attempt++)
+    {
+        char attemptText[128];
+        snprintf(attemptText, sizeof(attemptText),
+                 "Attempt %d: Score %d  |  Length %d  |  Time %.1fs",
+                 attempt + 1,
+                 _MpCtx->players[displayIdx].attempts[attempt].score,
+                 _MpCtx->players[displayIdx].attempts[attempt].length,
+                 _MpCtx->players[displayIdx].attempts[attempt].survivalTime / 1000.0f);
+
+        SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontSmall, attemptText, gray);
+        if (surface)
+        {
+            SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, surface);
+            if (texture)
+            {
+                SDL_Rect dest = {
+                    WINDOW_WIDTH / 2 - surface->w / 2,
+                    yPos,
+                    surface->w,
+                    surface->h
+                };
+                SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+                SDL_DestroyTexture(texture);
+            }
+            SDL_FreeSurface(surface);
+        }
+
+        yPos += 30;
+    }
+
+    // Navigation arrows (if multiple players)
+    if (playerCount > 1)
+    {
+        SDL_Color arrowColor = {255, 255, 255, 200};
+
+        // Left arrow
+        if (_MpCtx->resultPageIndex > 0)
+        {
+            SDL_Surface *leftSurface = TTF_RenderText_Solid(_Renderer->fontLarge, "<", arrowColor);
+            if (leftSurface)
+            {
+                SDL_Texture *leftTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, leftSurface);
+                if (leftTexture)
+                {
+                    SDL_Rect leftRect = { 50, WINDOW_HEIGHT / 2 - 30, leftSurface->w, leftSurface->h };
+                    SDL_RenderCopy(_Renderer->sdlRenderer, leftTexture, NULL, &leftRect);
+                    SDL_DestroyTexture(leftTexture);
+                }
+                SDL_FreeSurface(leftSurface);
+            }
+        }
+
+        // Right arrow
+        if (_MpCtx->resultPageIndex < playerCount - 1)
+        {
+            SDL_Surface *rightSurface = TTF_RenderText_Solid(_Renderer->fontLarge, ">", arrowColor);
+            if (rightSurface)
+            {
+                SDL_Texture *rightTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, rightSurface);
+                if (rightTexture)
+                {
+                    SDL_Rect rightRect = { WINDOW_WIDTH - 80, WINDOW_HEIGHT / 2 - 30, rightSurface->w, rightSurface->h };
+                    SDL_RenderCopy(_Renderer->sdlRenderer, rightTexture, NULL, &rightRect);
+                    SDL_DestroyTexture(rightTexture);
+                }
+                SDL_FreeSurface(rightSurface);
+            }
+        }
+
+        // Page indicator
+        char pageText[32];
+        snprintf(pageText, sizeof(pageText), "%d / %d", _MpCtx->resultPageIndex + 1, playerCount);
+        SDL_Surface *pageSurface = TTF_RenderText_Solid(_Renderer->fontSmall, pageText, gray);
+        if (pageSurface)
+        {
+            SDL_Texture *pageTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, pageSurface);
+            if (pageTexture)
+            {
+                SDL_Rect pageRect = {
+                    WINDOW_WIDTH / 2 - pageSurface->w / 2,
+                    WINDOW_HEIGHT - 110,
+                    pageSurface->w,
+                    pageSurface->h
+                };
+                SDL_RenderCopy(_Renderer->sdlRenderer, pageTexture, NULL, &pageRect);
+                SDL_DestroyTexture(pageTexture);
+            }
+            SDL_FreeSurface(pageSurface);
+        }
+    }
+
+    // Instructions
+    SDL_Surface *instrSurface = TTF_RenderText_Solid(_Renderer->fontSmall,
+        "Left/Right: Navigate  |  Enter: Lobby  |  ESC: Menu", white);
+    if (instrSurface)
+    {
+        SDL_Texture *instrTexture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, instrSurface);
+        if (instrTexture)
+        {
+            SDL_Rect instrRect = {
+                WINDOW_WIDTH / 2 - instrSurface->w / 2,
+                WINDOW_HEIGHT - 30,
+                instrSurface->w,
+                instrSurface->h
+            };
+            SDL_RenderCopy(_Renderer->sdlRenderer, instrTexture, NULL, &instrRect);
+            SDL_DestroyTexture(instrTexture);
+        }
+        SDL_FreeSurface(instrSurface);
+    }
+}
+
 // Render scoreboard with animated medals
 void Renderer_DrawScoreboard(Renderer *_Renderer, Scoreboard *_Scoreboard, unsigned int _Tick)
 {
@@ -2188,8 +2854,10 @@ void Renderer_DrawScoreboard(Renderer *_Renderer, Scoreboard *_Scoreboard, unsig
 
 /* Main frame rendering - handles all game states */
 void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_MpCtx,
-                         Scoreboard *_Scoreboard, unsigned int _CurrentTime, int _MainMenuSelection)
+                         Scoreboard *_Scoreboard, unsigned int _CurrentTime, int _MainMenuSelection, void *_Audio)
 {
+    (void)_Audio;  // Used in multiplayer for chat sounds
+
     // Clear screen
     Renderer_Clear(_Renderer);
 
@@ -2384,6 +3052,22 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
                 SDL_FreeSurface(surface);
             }
         }
+        else if (_MpCtx->state == MP_STATE_READY_UP)
+        {
+            Renderer_DrawReadyUp(_Renderer, _MpCtx);
+        }
+        else if (_MpCtx->state == MP_STATE_TURN_PLAYING)
+        {
+            Renderer_DrawTurnPlaying(_Renderer, _MpCtx);
+        }
+        else if (_MpCtx->state == MP_STATE_TURN_WAITING)
+        {
+            Renderer_DrawTurnWaiting(_Renderer, _MpCtx);
+        }
+        else if (_MpCtx->state == MP_STATE_TURN_RESULTS)
+        {
+            Renderer_DrawTurnResults(_Renderer, _MpCtx);
+        }
         else if (_MpCtx->state == MP_STATE_LOBBY ||
                  (_MpCtx->state == MP_STATE_CHATTING && _MpCtx->previousState == MP_STATE_LOBBY) ||
                  (_MpCtx->state == MP_STATE_CHANGING_NICK && _MpCtx->previousState == MP_STATE_LOBBY))
@@ -2411,15 +3095,31 @@ void Renderer_DrawFrame(Renderer *_Renderer, Game *_Game, MultiplayerContext *_M
                 int seconds_left = (_MpCtx->gameStartTime - _CurrentTime) / 1000 + 1;
                 int time_in_second = _CurrentTime % 1000;
 
-                // Black overlay - fully opaque for 3 and 2, fading out for 1
+                // Pulsating lightning effect overlay
                 SDL_SetRenderDrawBlendMode(_Renderer->sdlRenderer, SDL_BLENDMODE_BLEND);
+
+                // Create pulsating effect with sin wave
+                float pulse_cycle = (_CurrentTime % 300) / 300.0f;  // Fast pulse (300ms cycle)
+                float pulse_intensity = (sin(pulse_cycle * 3.14159f * 2) + 1.0f) / 2.0f; // 0.0 to 1.0
+
+                // Add random lightning flashes
+                int flash_chance = _CurrentTime % 100;
+                float flash_intensity = (flash_chance < 10) ? 0.8f : 0.0f; // 10% chance of flash
+
+                // Combine pulse and flash
+                float combined_intensity = fmin(1.0f, pulse_intensity * 0.4f + flash_intensity);
+
                 int overlay_alpha = 255;
                 if (seconds_left == 1)
                 {
                     // Fade from black (255) to transparent (0) during the last second
                     overlay_alpha = 255 - (time_in_second * 255 / 1000);
+                    combined_intensity *= (overlay_alpha / 255.0f);
                 }
-                SDL_SetRenderDrawColor(_Renderer->sdlRenderer, 0, 0, 0, overlay_alpha);
+
+                // Mix black with white lightning effect
+                int lightning_value = (int)(combined_intensity * 255);
+                SDL_SetRenderDrawColor(_Renderer->sdlRenderer, lightning_value, lightning_value, lightning_value, overlay_alpha);
                 SDL_Rect overlayRect = {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT};
                 SDL_RenderFillRect(_Renderer->sdlRenderer, &overlayRect);
 

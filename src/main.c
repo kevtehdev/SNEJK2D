@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
             }
             else if (game.state == GAME_MAIN_MENU)
             {
-                Input_HandleMainMenuInput(&game, &event, &mpCtx);
+                Input_HandleMainMenuInput(&game, &event, &mpCtx, &audio);
             }
             else
             {
@@ -83,6 +83,18 @@ int main(int argc, char *argv[])
             if (mpCtx->isHost && mpCtx->state == MP_STATE_PLAYING)
             {
                 Multiplayer_HostUpdate(mpCtx, currentTime);
+            }
+            else if (mpCtx->state == MP_STATE_TURN_PLAYING)
+            {
+                // Update local game during turn battle
+                Game_Update(&mpCtx->localGame);
+
+                // Check if player died
+                if (mpCtx->localGame.state == GAME_OVER)
+                {
+                    // Finish this attempt
+                    Multiplayer_FinishTurnAttempt(mpCtx);
+                }
             }
             Multiplayer_UpdateCountdown(mpCtx, currentTime);
         }
@@ -118,7 +130,7 @@ int main(int argc, char *argv[])
         }
 
         // Render everything
-        Renderer_DrawFrame(&renderer, &game, mpCtx, &scoreboard, currentTime, g_main_menu_selection);
+        Renderer_DrawFrame(&renderer, &game, mpCtx, &scoreboard, currentTime, g_main_menu_selection, &audio);
 
         SDL_Delay(16);  // ~60 FPS
     }

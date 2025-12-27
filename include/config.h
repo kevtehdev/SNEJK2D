@@ -81,6 +81,6 @@
 
 // Multiplayer identification
 
-#define STUDENT_NUMBER "67"
+#define STUDENT_NUMBER "76"
 
 #endif //__CONFIG_H_

@@ -1,4 +1,5 @@
 #include "../include/multiplayer.h"
+#include "../include/audio.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -242,12 +243,37 @@ static void mpapiEventCallback(const char *event, int64_t messageId, const char 
                 }
             }
         }
+        else if (strcmp(msgType, "mode_selected") == 0)
+        {
+            // Host selected game mode (clients only receive this)
+            json_t *gameModeObj = json_object_get(data, "gameMode");
+            if (gameModeObj && json_is_integer(gameModeObj))
+            {
+                ctx->gameMode = (MultiplayerGameMode)json_integer_value(gameModeObj);
+                printf("Host selected game mode: %s\n",
+                       ctx->gameMode == MP_MODE_1VS1 ? "1VS1" : "TURN BATTLE");
+            }
+        }
         else if (strcmp(msgType, "start_game") == 0)
         {
             // Game starting
-            ctx->state = MP_STATE_COUNTDOWN;
-            ctx->countdownStart = SDL_GetTicks();
-            ctx->gameStartTime = ctx->countdownStart + 3000;
+            json_t *gameModeObj = json_object_get(data, "gameMode");
+            if (gameModeObj && json_is_integer(gameModeObj))
+            {
+                ctx->gameMode = (MultiplayerGameMode)json_integer_value(gameModeObj);
+            }
+
+            if (ctx->gameMode == MP_MODE_TURN_BATTLE)
+            {
+                ctx->state = MP_STATE_READY_UP;
+                printf("Entering TURN BATTLE ready-up\n");
+            }
+            else
+            {
+                ctx->state = MP_STATE_COUNTDOWN;
+                ctx->countdownStart = SDL_GetTicks();
+                ctx->gameStartTime = ctx->countdownStart + 3000;
+            }
         }
         else if (strcmp(msgType, "restart_game") == 0)
         {
@@ -279,6 +305,12 @@ static void mpapiEventCallback(const char *event, int64_t messageId, const char 
                 ctx->chatMessages[ctx->chatCount][sizeof(ctx->chatMessages[0]) - 1] = '\0';
                 ctx->chatCount++;
 
+                // Play chat notification sound
+                if (ctx->audio)
+                {
+                    Audio_PlaySound((AudioSystem *)ctx->audio, SOUND_CHAT);
+                }
+
                 printf("✓ Chat message received from other player: %s\n", message);
             }
         }
@@ -288,6 +320,88 @@ static void mpapiEventCallback(const char *event, int64_t messageId, const char 
             printf("✓ Host disconnected - returning to main menu\n");
             ctx->state = MP_STATE_DISCONNECTED;
             strncpy(ctx->errorMessage, "Host disconnected", sizeof(ctx->errorMessage) - 1);
+        }
+        else if (strcmp(msgType, "player_left") == 0)
+        {
+            // A player has left the game (from server)
+            const char *leftClientId = json_string_value(json_object_get(data, "clientId"));
+
+            if (leftClientId)
+            {
+                // Find and remove the player
+                for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
+                {
+                    if (ctx->players[i].joined && strcmp(ctx->players[i].clientId, leftClientId) == 0)
+                    {
+                        printf("✓ Player left: %s\n", ctx->players[i].name);
+                        ctx->players[i].joined = false;
+                        ctx->players[i].ready = false;
+                        ctx->players[i].turnFinished = false;
+
+                        // If we're in turn battle and waiting for results, check if we can show results now
+                        if (ctx->gameMode == MP_MODE_TURN_BATTLE)
+                        {
+                            if (ctx->state == MP_STATE_TURN_WAITING && ctx->isHost)
+                            {
+                                // Check if all remaining players are finished
+                                if (Multiplayer_AllTurnsFinished(ctx))
+                                {
+                                    Multiplayer_CalculateTurnWinner(ctx);
+                                    ctx->resultPageIndex = 0;
+                                    ctx->state = MP_STATE_TURN_RESULTS;
+
+                                    // Broadcast results to remaining players
+                                    json_t *resultsMsg = json_object();
+                                    json_object_set_new(resultsMsg, "type", json_string("show_results"));
+                                    mpapi_game(ctx->api, resultsMsg, NULL);
+                                    json_decref(resultsMsg);
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        else if (strcmp(msgType, "player_leaving") == 0)
+        {
+            // A player is voluntarily leaving (broadcast from player)
+            if (clientId)
+            {
+                // Find and remove the player
+                for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
+                {
+                    if (ctx->players[i].joined && strcmp(ctx->players[i].clientId, clientId) == 0)
+                    {
+                        printf("✓ Player %s is leaving the game\n", ctx->players[i].name);
+                        ctx->players[i].joined = false;
+                        ctx->players[i].ready = false;
+                        ctx->players[i].turnFinished = false;
+
+                        // If we're in turn battle and waiting for results, check if we can show results now
+                        if (ctx->gameMode == MP_MODE_TURN_BATTLE)
+                        {
+                            if (ctx->state == MP_STATE_TURN_WAITING && ctx->isHost)
+                            {
+                                // Check if all remaining players are finished
+                                if (Multiplayer_AllTurnsFinished(ctx))
+                                {
+                                    Multiplayer_CalculateTurnWinner(ctx);
+                                    ctx->resultPageIndex = 0;
+                                    ctx->state = MP_STATE_TURN_RESULTS;
+
+                                    // Broadcast results to remaining players
+                                    json_t *resultsMsg = json_object();
+                                    json_object_set_new(resultsMsg, "type", json_string("show_results"));
+                                    mpapi_game(ctx->api, resultsMsg, NULL);
+                                    json_decref(resultsMsg);
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
         }
         else if (strcmp(msgType, "nick_change") == 0)
         {
@@ -314,6 +428,89 @@ static void mpapiEventCallback(const char *event, int64_t messageId, const char 
                     }
                 }
             }
+        }
+        else if (strcmp(msgType, "turn_results") == 0)
+        {
+            // Turn battle results from a player
+            int playerIdx = json_integer_value(json_object_get(data, "playerIndex"));
+            int bestScore = json_integer_value(json_object_get(data, "bestScore"));
+            json_t *attemptsArray = json_object_get(data, "attempts");
+
+            if (playerIdx >= 0 && playerIdx < MAX_MULTIPLAYER_PLAYERS && json_is_array(attemptsArray))
+            {
+                ctx->players[playerIdx].bestScore = bestScore;
+                ctx->players[playerIdx].completedAttempts = json_array_size(attemptsArray);
+
+                // Load attempt details
+                for (int i = 0; i < 3 && i < json_array_size(attemptsArray); i++)
+                {
+                    json_t *attemptObj = json_array_get(attemptsArray, i);
+                    ctx->players[playerIdx].attempts[i].score = json_integer_value(json_object_get(attemptObj, "score"));
+                    ctx->players[playerIdx].attempts[i].length = json_integer_value(json_object_get(attemptObj, "length"));
+                    ctx->players[playerIdx].attempts[i].survivalTime = json_integer_value(json_object_get(attemptObj, "survivalTime"));
+                }
+
+                ctx->players[playerIdx].turnFinished = true;
+                printf("✓ Received turn results from player %d - Best: %d\n", playerIdx, bestScore);
+
+                // If host and all players finished, move to results
+                if (ctx->isHost && Multiplayer_AllTurnsFinished(ctx))
+                {
+                    Multiplayer_CalculateTurnWinner(ctx);
+                    ctx->resultPageIndex = 0;  // Start at winner
+                    ctx->state = MP_STATE_TURN_RESULTS;
+
+                    // Broadcast results state to all players
+                    json_t *resultsMsg = json_object();
+                    json_object_set_new(resultsMsg, "type", json_string("show_results"));
+                    mpapi_game(ctx->api, resultsMsg, NULL);
+                    json_decref(resultsMsg);
+                }
+            }
+        }
+        else if (strcmp(msgType, "show_results") == 0)
+        {
+            // Host is telling us to show results
+            ctx->resultPageIndex = 0;  // Start at winner
+            ctx->state = MP_STATE_TURN_RESULTS;
+            Multiplayer_CalculateTurnWinner(ctx);
+        }
+        else if (strcmp(msgType, "start_turn_attempt") == 0)
+        {
+            // Host is starting a turn attempt for all players
+            int attempt = json_integer_value(json_object_get(data, "attempt"));
+            ctx->currentAttempt = attempt;
+            Multiplayer_StartTurnAttempt(ctx);
+            printf("✓ Starting turn attempt %d/3\n", attempt + 1);
+        }
+        else if (strcmp(msgType, "return_to_lobby") == 0)
+        {
+            // Host is returning everyone to lobby after turn battle results
+            ctx->state = MP_STATE_LOBBY;
+
+            // Reset turn battle data
+            for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
+            {
+                ctx->players[i].ready = false;
+                ctx->players[i].turnFinished = false;
+                ctx->players[i].completedAttempts = 0;
+                ctx->players[i].bestScore = 0;
+            }
+            ctx->currentAttempt = 0;
+            ctx->resultPageIndex = 0;
+            printf("✓ Returned to lobby\n");
+        }
+        else if (strcmp(msgType, "cancel_ready_up") == 0)
+        {
+            // Host cancelled ready-up, return to lobby
+            ctx->state = MP_STATE_LOBBY;
+
+            // Reset ready states
+            for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
+            {
+                ctx->players[i].ready = false;
+            }
+            printf("✓ Ready-up cancelled, returned to lobby\n");
         }
     }
 }
@@ -350,6 +547,7 @@ MultiplayerContext* Multiplayer_Create(void)
     ctx->localPlayerIndex = -1;
     ctx->currentSpeed = BASE_SPEED;
     ctx->listenerId = -1;
+    ctx->audio = NULL;  // Will be set by caller
     ctx->menuSelection = 0;
     ctx->sessionInputLen = 0;
     memset(ctx->sessionInput, 0, sizeof(ctx->sessionInput));
@@ -369,6 +567,13 @@ MultiplayerContext* Multiplayer_Create(void)
     // Initialize nick change
     ctx->nickInputLen = 0;
     memset(ctx->nickInput, 0, sizeof(ctx->nickInput));
+
+    // Initialize turn battle
+    ctx->gameMode = MP_MODE_TURN_BATTLE;  // Default to turn battle
+    ctx->modeSelection = 0;
+    ctx->currentAttempt = 0;
+    ctx->attemptStartTime = 0;
+    ctx->resultPageIndex = 0;
 
     return ctx;
 }
@@ -402,17 +607,24 @@ int Multiplayer_Host(MultiplayerContext *_Ctx, const char *_PlayerName)
     _Ctx->isHost = true;
     _Ctx->state = MP_STATE_HOSTING;
 
+    // Set game mode based on selection
+    _Ctx->gameMode = (_Ctx->modeSelection == 0) ? MP_MODE_TURN_BATTLE : MP_MODE_1VS1;
+
     // Map names with de_ prefix
     const char *mapNames[] = {"de_cyberpunk", "de_forest", "de_underwater", "de_mountain", "de_country"};
+    const char *modeNames[] = {"TURN BATTLE", "1VS1"};
 
-    printf("DEBUG: selectedBackground = %d (%s)\n", _Ctx->selectedBackground,
-           mapNames[_Ctx->selectedBackground % 5]);
+    printf("DEBUG: selectedBackground = %d (%s), gameMode = %s\n",
+           _Ctx->selectedBackground,
+           mapNames[_Ctx->selectedBackground % 5],
+           modeNames[_Ctx->gameMode]);
 
-    // Format room name with student number AND map ID encoded in the name
-    // Format: [67] roomname |m2| where 2 is the map ID
+    // Format room name with student number, map ID and game mode encoded in the name
+    // Format: [67] roomname |m2| |g1V| where 2 is map ID and 1V is game mode (1V=1VS1, TB=TURN BATTLE)
+    const char *modeCode = (_Ctx->gameMode == MP_MODE_1VS1) ? "1V" : "TB";
     char nameWithId[128];
-    snprintf(nameWithId, sizeof(nameWithId), "[%s] %s |m%d|",
-             STUDENT_NUMBER, _Ctx->roomName, _Ctx->selectedBackground);
+    snprintf(nameWithId, sizeof(nameWithId), "[%s] %s |m%d| |g%s|",
+             STUDENT_NUMBER, _Ctx->roomName, _Ctx->selectedBackground, modeCode);
 
     json_t *hostData = json_object();
     json_object_set_new(hostData, "name", json_string(nameWithId));
@@ -899,6 +1111,7 @@ void Multiplayer_StartGame(MultiplayerContext *_Ctx)
 
     json_t *message = json_object();
     json_object_set_new(message, "type", json_string("start_game"));
+    json_object_set_new(message, "gameMode", json_integer(_Ctx->gameMode));
 
     int rc = mpapi_game(_Ctx->api, message, NULL);
     if (rc != MPAPI_OK)
@@ -908,9 +1121,18 @@ void Multiplayer_StartGame(MultiplayerContext *_Ctx)
 
     json_decref(message);
 
-    _Ctx->state = MP_STATE_COUNTDOWN;
-    _Ctx->countdownStart = SDL_GetTicks();
-    _Ctx->gameStartTime = _Ctx->countdownStart + 3000;
+    // For turn battle, go to ready-up state instead of countdown
+    if (_Ctx->gameMode == MP_MODE_TURN_BATTLE)
+    {
+        _Ctx->state = MP_STATE_READY_UP;
+        printf("Starting TURN BATTLE mode - players ready up\n");
+    }
+    else
+    {
+        _Ctx->state = MP_STATE_COUNTDOWN;
+        _Ctx->countdownStart = SDL_GetTicks();
+        _Ctx->gameStartTime = _Ctx->countdownStart + 3000;
+    }
 }
 
 // Restart game (after game over)
@@ -1346,7 +1568,7 @@ int Multiplayer_BrowseGames(MultiplayerContext *_Ctx)
                 continue;  // Skip if no ID
             }
 
-            // Parse map ID from name format: "[67] roomname |m2|"
+            // Parse map ID from name format: "[67] roomname |m2| |gRT|"
             int mapId = 0;  // Default
             const char *mapMarker = strstr(name, "|m");
             if (mapMarker)
@@ -1375,12 +1597,35 @@ int Multiplayer_BrowseGames(MultiplayerContext *_Ctx)
             }
             _Ctx->browsedGames[_Ctx->browsedGameCount].mapId = mapId;
 
-            // Store the game name WITHOUT the map marker for display
-            char cleanName[128];
-            if (mapMarker)
+            // Parse game mode from name format: "|g1V|" or "|gTB|"
+            MultiplayerGameMode gameMode = MP_MODE_1VS1;  // Default
+            const char *modeMarker = strstr(name, "|g");
+            if (modeMarker)
             {
-                // Copy up to the map marker
-                size_t len = mapMarker - name;
+                // Check if it's TURN BATTLE (TB) or 1VS1 (1V)
+                if (strncmp(modeMarker + 2, "TB", 2) == 0)
+                {
+                    gameMode = MP_MODE_TURN_BATTLE;
+                    printf("✓ Parsed game mode: TURN BATTLE\n");
+                }
+                else
+                {
+                    printf("✓ Parsed game mode: 1VS1\n");
+                }
+            }
+            else
+            {
+                printf("⚠ No game mode info found, defaulting to 1VS1\n");
+            }
+            _Ctx->browsedGames[_Ctx->browsedGameCount].gameMode = gameMode;
+
+            // Store the game name WITHOUT the map/mode markers for display
+            char cleanName[128];
+            const char *firstMarker = mapMarker ? mapMarker : modeMarker;
+            if (firstMarker)
+            {
+                // Copy up to the first marker
+                size_t len = firstMarker - name;
                 if (len > sizeof(cleanName) - 1)
                     len = sizeof(cleanName) - 1;
                 strncpy(cleanName, name, len);
@@ -1424,4 +1669,156 @@ int Multiplayer_BrowseGames(MultiplayerContext *_Ctx)
     _Ctx->selectedGameIndex = 0;
 
     return 1;
+}
+
+// ============================================================================
+// Turn Battle Functions
+// ============================================================================
+
+void Multiplayer_StartTurnAttempt(MultiplayerContext *_Ctx)
+{
+    if (!_Ctx || _Ctx->gameMode != MP_MODE_TURN_BATTLE)
+        return;
+
+    // Initialize local game for this attempt
+    Game_Init(&_Ctx->localGame);
+    _Ctx->localGame.state = GAME_PLAYING;
+    _Ctx->localGame.selectedBackground = _Ctx->selectedBackground;
+    _Ctx->attemptStartTime = SDL_GetTicks();
+    _Ctx->state = MP_STATE_TURN_PLAYING;
+
+    printf("Starting turn attempt %d/3\n", _Ctx->currentAttempt + 1);
+}
+
+void Multiplayer_FinishTurnAttempt(MultiplayerContext *_Ctx)
+{
+    if (!_Ctx || _Ctx->gameMode != MP_MODE_TURN_BATTLE)
+        return;
+
+    int localIdx = Multiplayer_GetLocalPlayerIndex(_Ctx);
+    if (localIdx < 0)
+        return;
+
+    // Record attempt results
+    TurnAttempt *attempt = &_Ctx->players[localIdx].attempts[_Ctx->currentAttempt];
+    attempt->score = _Ctx->localGame.snake.score;
+    attempt->length = _Ctx->localGame.snake.length;
+    attempt->survivalTime = SDL_GetTicks() - _Ctx->attemptStartTime;
+
+    _Ctx->currentAttempt++;
+    _Ctx->players[localIdx].completedAttempts = _Ctx->currentAttempt;
+
+    printf("Finished attempt %d - Score: %d, Length: %d, Time: %ums\n",
+           _Ctx->currentAttempt, attempt->score, attempt->length, attempt->survivalTime);
+
+    // Check if all 3 attempts are done
+    if (_Ctx->currentAttempt >= 3)
+    {
+        // Calculate best score
+        int bestScore = 0;
+        for (int i = 0; i < 3; i++)
+        {
+            if (_Ctx->players[localIdx].attempts[i].score > bestScore)
+                bestScore = _Ctx->players[localIdx].attempts[i].score;
+        }
+        _Ctx->players[localIdx].bestScore = bestScore;
+        _Ctx->players[localIdx].turnFinished = true;
+
+        // Submit results to host
+        Multiplayer_SubmitTurnResults(_Ctx);
+        _Ctx->state = MP_STATE_TURN_WAITING;
+
+        // If we're host and all players are now finished, show results immediately
+        if (_Ctx->isHost && Multiplayer_AllTurnsFinished(_Ctx))
+        {
+            Multiplayer_CalculateTurnWinner(_Ctx);
+            _Ctx->resultPageIndex = 0;  // Start at winner
+            _Ctx->state = MP_STATE_TURN_RESULTS;
+
+            // Broadcast results state to all players
+            json_t *resultsMsg = json_object();
+            json_object_set_new(resultsMsg, "type", json_string("show_results"));
+            mpapi_game(_Ctx->api, resultsMsg, NULL);
+            json_decref(resultsMsg);
+        }
+    }
+    else
+    {
+        // Start next attempt
+        Multiplayer_StartTurnAttempt(_Ctx);
+    }
+}
+
+void Multiplayer_SubmitTurnResults(MultiplayerContext *_Ctx)
+{
+    if (!_Ctx || !_Ctx->api)
+        return;
+
+    int localIdx = Multiplayer_GetLocalPlayerIndex(_Ctx);
+    if (localIdx < 0)
+        return;
+
+    // Create results message
+    json_t *message = json_object();
+    json_object_set_new(message, "type", json_string("turn_results"));
+    json_object_set_new(message, "playerIndex", json_integer(localIdx));
+    json_object_set_new(message, "bestScore", json_integer(_Ctx->players[localIdx].bestScore));
+
+    // Add all attempt results
+    json_t *attemptsArray = json_array();
+    for (int i = 0; i < 3; i++)
+    {
+        json_t *attemptObj = json_object();
+        json_object_set_new(attemptObj, "score", json_integer(_Ctx->players[localIdx].attempts[i].score));
+        json_object_set_new(attemptObj, "length", json_integer(_Ctx->players[localIdx].attempts[i].length));
+        json_object_set_new(attemptObj, "survivalTime", json_integer(_Ctx->players[localIdx].attempts[i].survivalTime));
+        json_array_append_new(attemptsArray, attemptObj);
+    }
+    json_object_set_new(message, "attempts", attemptsArray);
+
+    mpapi_game(_Ctx->api, message, NULL);
+    json_decref(message);
+
+    printf("Submitted turn results - Best score: %d\n", _Ctx->players[localIdx].bestScore);
+}
+
+bool Multiplayer_AllTurnsFinished(MultiplayerContext *_Ctx)
+{
+    if (!_Ctx)
+        return false;
+
+    for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
+    {
+        if (_Ctx->players[i].joined && !_Ctx->players[i].turnFinished)
+            return false;
+    }
+
+    return true;
+}
+
+void Multiplayer_CalculateTurnWinner(MultiplayerContext *_Ctx)
+{
+    if (!_Ctx)
+        return;
+
+    int winnerIdx = -1;
+    int highestScore = -1;
+
+    for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
+    {
+        if (_Ctx->players[i].joined)
+        {
+            if (_Ctx->players[i].bestScore > highestScore)
+            {
+                highestScore = _Ctx->players[i].bestScore;
+                winnerIdx = i;
+            }
+        }
+    }
+
+    if (winnerIdx >= 0)
+    {
+        printf("Turn Battle Winner: %s with score %d\n",
+               _Ctx->players[winnerIdx].name, highestScore);
+    }
 }

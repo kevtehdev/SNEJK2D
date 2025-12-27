@@ -10,7 +10,7 @@
 int g_main_menu_selection = 0;
 bool g_score_saved = false;
 
-void Input_HandleMainMenuInput(Game *_Game, SDL_Event *_Event, MultiplayerContext **_MpCtx)
+void Input_HandleMainMenuInput(Game *_Game, SDL_Event *_Event, MultiplayerContext **_MpCtx, void *_Audio)
 {
     if (_Event->type == SDL_KEYDOWN)
     {
@@ -37,6 +37,10 @@ void Input_HandleMainMenuInput(Game *_Game, SDL_Event *_Event, MultiplayerContex
                 if (!*_MpCtx)
                 {
                     *_MpCtx = Multiplayer_Create();
+                    if (*_MpCtx)
+                    {
+                        (*_MpCtx)->audio = _Audio;
+                    }
                 }
             }
             else if (g_main_menu_selection == 2)
@@ -472,6 +476,15 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
             {
                 _MpCtx->selectedBackground = (_MpCtx->selectedBackground + 1) % NUM_BACKGROUNDS;
             }
+            // UP/DOWN for game mode selection
+            else if (_Event->key.keysym.sym == SDLK_UP)
+            {
+                _MpCtx->modeSelection = 0;  // REALTIME
+            }
+            else if (_Event->key.keysym.sym == SDLK_DOWN)
+            {
+                _MpCtx->modeSelection = 1;  // TURN BATTLE
+            }
             else if (_MpCtx->roomNameLen < 32)
             {
                 char c = _Event->key.keysym.sym;
@@ -501,8 +514,9 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
             case SDLK_SPACE:
                 if (_MpCtx->browsedGameCount > 0)
                 {
-                    // Set the background to match the game we're joining
+                    // Set the background and game mode to match the game we're joining
                     _MpCtx->selectedBackground = _MpCtx->browsedGames[_MpCtx->selectedGameIndex].mapId;
+                    _MpCtx->gameMode = _MpCtx->browsedGames[_MpCtx->selectedGameIndex].gameMode;
                     // Use player name from Game struct, or default to "Player 2"
                     const char *playerName = (_Game && _Game->playerNameLen > 0) ? _Game->playerName : "Player 2";
                     Multiplayer_Join(_MpCtx, _MpCtx->browsedGames[_MpCtx->selectedGameIndex].sessionId, playerName);
@@ -544,6 +558,7 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
             case SDLK_RETURN:
                 if (_MpCtx->isHost && Multiplayer_AllReady(_MpCtx))
                 {
+                    // Start game with already selected mode
                     Multiplayer_StartGame(_MpCtx);
                 }
                 break;
@@ -557,6 +572,122 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
                     json_decref(message);
                 }
                 // Mark for disconnection
+                _MpCtx->state = MP_STATE_DISCONNECTED;
+                break;
+            }
+        }
+        else if (_MpCtx->state == MP_STATE_READY_UP)
+        {
+            // Turn battle ready-up screen
+            switch (_Event->key.keysym.sym)
+            {
+            case SDLK_SPACE:
+                Multiplayer_ToggleReady(_MpCtx);
+                break;
+            case SDLK_RETURN:
+                if (_MpCtx->isHost && Multiplayer_AllReady(_MpCtx))
+                {
+                    // Broadcast start command to all clients
+                    json_t *message = json_object();
+                    json_object_set_new(message, "type", json_string("start_turn_attempt"));
+                    json_object_set_new(message, "attempt", json_integer(0));
+                    mpapi_game(_MpCtx->api, message, NULL);
+                    json_decref(message);
+
+                    // Start turn battle for host
+                    _MpCtx->currentAttempt = 0;
+                    Multiplayer_StartTurnAttempt(_MpCtx);
+                }
+                break;
+            case SDLK_ESCAPE:
+                // Host broadcasts cancel to lobby
+                if (_MpCtx->isHost && _MpCtx->api)
+                {
+                    json_t *message = json_object();
+                    json_object_set_new(message, "type", json_string("cancel_ready_up"));
+                    mpapi_game(_MpCtx->api, message, NULL);
+                    json_decref(message);
+                }
+
+                // Cancel and return to lobby
+                // Reset ready states
+                for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
+                {
+                    _MpCtx->players[i].ready = false;
+                }
+                _MpCtx->state = MP_STATE_LOBBY;
+                break;
+            }
+        }
+        else if (_MpCtx->state == MP_STATE_TURN_WAITING)
+        {
+            // Waiting for other players to finish
+            if (_Event->key.keysym.sym == SDLK_ESCAPE)
+            {
+                // Broadcast that we're leaving before disconnecting
+                if (_MpCtx->api)
+                {
+                    json_t *leaveMsg = json_object();
+                    json_object_set_new(leaveMsg, "type", json_string("player_leaving"));
+                    mpapi_game(_MpCtx->api, leaveMsg, NULL);
+                    json_decref(leaveMsg);
+                }
+
+                // Disconnect
+                _MpCtx->state = MP_STATE_DISCONNECTED;
+            }
+        }
+        else if (_MpCtx->state == MP_STATE_TURN_RESULTS)
+        {
+            // Results screen
+            switch (_Event->key.keysym.sym)
+            {
+            case SDLK_LEFT:
+            case SDLK_a:
+                // Navigate to previous player
+                if (_MpCtx->resultPageIndex > 0)
+                    _MpCtx->resultPageIndex--;
+                break;
+            case SDLK_RIGHT:
+            case SDLK_d:
+                // Navigate to next player (will be clamped by renderer)
+                _MpCtx->resultPageIndex++;
+                break;
+            case SDLK_RETURN:
+                // Host broadcasts return to lobby
+                if (_MpCtx->isHost && _MpCtx->api)
+                {
+                    json_t *message = json_object();
+                    json_object_set_new(message, "type", json_string("return_to_lobby"));
+                    mpapi_game(_MpCtx->api, message, NULL);
+                    json_decref(message);
+                }
+
+                // Return to lobby for another round
+                _MpCtx->state = MP_STATE_LOBBY;
+
+                // Reset turn battle data
+                for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
+                {
+                    _MpCtx->players[i].ready = false;
+                    _MpCtx->players[i].turnFinished = false;
+                    _MpCtx->players[i].completedAttempts = 0;
+                    _MpCtx->players[i].bestScore = 0;
+                }
+                _MpCtx->currentAttempt = 0;
+                _MpCtx->resultPageIndex = 0;
+                break;
+            case SDLK_ESCAPE:
+                // Broadcast that we're leaving before disconnecting
+                if (_MpCtx->api)
+                {
+                    json_t *leaveMsg = json_object();
+                    json_object_set_new(leaveMsg, "type", json_string("player_leaving"));
+                    mpapi_game(_MpCtx->api, leaveMsg, NULL);
+                    json_decref(leaveMsg);
+                }
+
+                // Return to main menu
                 _MpCtx->state = MP_STATE_DISCONNECTED;
                 break;
             }
@@ -707,6 +838,41 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
                 break;
             }
         }
+        else if (_MpCtx->state == MP_STATE_TURN_PLAYING)
+        {
+            // Turn battle - control local game snake
+            Direction dir = DIR_UP;
+            bool hasInput = false;
+
+            switch (_Event->key.keysym.sym)
+            {
+            case SDLK_UP:
+            case SDLK_w:
+                dir = DIR_UP;
+                hasInput = true;
+                break;
+            case SDLK_DOWN:
+            case SDLK_s:
+                dir = DIR_DOWN;
+                hasInput = true;
+                break;
+            case SDLK_LEFT:
+            case SDLK_a:
+                dir = DIR_LEFT;
+                hasInput = true;
+                break;
+            case SDLK_RIGHT:
+            case SDLK_d:
+                dir = DIR_RIGHT;
+                hasInput = true;
+                break;
+            }
+
+            if (hasInput)
+            {
+                Snake_SetDirection(&_MpCtx->localGame.snake, dir);
+            }
+        }
         else if (_MpCtx->state == MP_STATE_PLAYING)
         {
             Direction dir = DIR_UP;
@@ -773,7 +939,7 @@ void Input_HandleInput(Game *_Game, SDL_Event *_Event, MultiplayerContext **_MpC
 
     if (_Game->state == GAME_MAIN_MENU)
     {
-        Input_HandleMainMenuInput(_Game, _Event, _MpCtx);
+        Input_HandleMainMenuInput(_Game, _Event, _MpCtx, _Audio);
     }
     else if (_Game->state == GAME_MODE_SELECT)
     {
