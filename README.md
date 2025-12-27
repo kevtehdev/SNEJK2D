@@ -40,6 +40,7 @@ Two players compete online. One creates lobby (HOST GAME), the other joins (JOIN
 **Spelsätt:**
 - **1VS1**: Klassiskt multiplayer där första som dör förlorar
 - **TURN BATTLE**: Varje spelare spelar 3 försök solo, högsta poäng vinner
+  - Host kan välja mellan Classic och Power-Up mode med piltangenter i lobby
 
 ### Testning av multiplayer lokalt
 
