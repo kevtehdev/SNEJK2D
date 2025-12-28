@@ -668,13 +668,13 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
             // Waiting for other players to finish
             if (_Event->key.keysym.sym == SDLK_ESCAPE)
             {
-                // Broadcast that we're leaving before disconnecting
-                if (_MpCtx->api)
+                // Broadcast disconnect to clients if host
+                if (_MpCtx->isHost && _MpCtx->api)
                 {
-                    json_t *leaveMsg = json_object();
-                    json_object_set_new(leaveMsg, "type", json_string("player_leaving"));
-                    mpapi_game(_MpCtx->api, leaveMsg, NULL);
-                    json_decref(leaveMsg);
+                    json_t *message = json_object();
+                    json_object_set_new(message, "type", json_string("host_disconnect"));
+                    mpapi_game(_MpCtx->api, message, NULL);
+                    json_decref(message);
                 }
 
                 // Disconnect
@@ -722,13 +722,13 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
                 _MpCtx->resultPageIndex = 0;
                 break;
             case SDLK_ESCAPE:
-                // Broadcast that we're leaving before disconnecting
-                if (_MpCtx->api)
+                // Broadcast disconnect to clients if host
+                if (_MpCtx->isHost && _MpCtx->api)
                 {
-                    json_t *leaveMsg = json_object();
-                    json_object_set_new(leaveMsg, "type", json_string("player_leaving"));
-                    mpapi_game(_MpCtx->api, leaveMsg, NULL);
-                    json_decref(leaveMsg);
+                    json_t *message = json_object();
+                    json_object_set_new(message, "type", json_string("host_disconnect"));
+                    mpapi_game(_MpCtx->api, message, NULL);
+                    json_decref(message);
                 }
 
                 // Return to main menu
@@ -946,8 +946,8 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
                 hasInput = true;
                 break;
             case SDLK_ESCAPE:
-                // Broadcast disconnect to other player
-                if (_MpCtx->api)
+                // Broadcast disconnect to clients if host
+                if (_MpCtx->isHost && _MpCtx->api)
                 {
                     json_t *message = json_object();
                     json_object_set_new(message, "type", json_string("host_disconnect"));

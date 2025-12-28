@@ -70,7 +70,7 @@ bool Renderer_Init(Renderer *_Renderer)
         return false;
     }
 
-    /* Load backgrounds (5 total) */
+    /* Load backgrounds (6 total) */
     /* 0: Cyberpunk Street */
     _Renderer->backgrounds[0].numLayers = 3;
     _Renderer->backgrounds[0].layers[0] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/cyberpunk/far-buildings.png");
@@ -854,7 +854,7 @@ void Renderer_DrawMenu(Renderer *_Renderer, int _SelectedBg)
     }
 
     /* Background names */
-    const char *bgNames[NUM_BACKGROUNDS] = {"cyberpunk", "forest", "underwater", "mountain", "country"};
+    const char *bgNames[NUM_BACKGROUNDS] = {"cyberpunk", "forest", "underwater", "mountain", "country", "city"};
     char bgText[64];
 
     /* Safety check for selected_bg index */
@@ -1724,7 +1724,7 @@ void Renderer_DrawMultiplayerRoomName(Renderer *_Renderer, MultiplayerContext *_
     y += 30;
 
     // Map name with de_ prefix
-    const char *map_names[] = {"de_cyberpunk", "de_forest", "de_underwater", "de_mountain", "de_country"};
+    const char *map_names[] = {"de_cyberpunk", "de_forest", "de_underwater", "de_mountain", "de_country", "de_city"};
     char map_display[64];
     snprintf(map_display, sizeof(map_display), "< %s >", map_names[_MpCtx->selectedBackground]);
 
@@ -1808,9 +1808,9 @@ void Renderer_DrawMultiplayerBrowse(Renderer *_Renderer, MultiplayerContext *_Mp
             const char *prefix = (i == _MpCtx->selectedGameIndex) ? "> " : "  ";
 
             // Map names with de_ prefix
-            const char *map_names[] = {"de_cyberpunk", "de_forest", "de_underwater", "de_mountain", "de_country"};
+            const char *map_names[] = {"de_cyberpunk", "de_forest", "de_underwater", "de_mountain", "de_country", "de_city"};
             int map_id = _MpCtx->browsedGames[i].mapId;
-            if (map_id < 0 || map_id >= 5)
+            if (map_id < 0 || map_id >= 6)
                 map_id = 0; // Default to first map if invalid
             const char *map_name = map_names[map_id];
 
@@ -2216,7 +2216,8 @@ void Renderer_DrawMultiplayerHudBorder(Renderer *_Renderer, MultiplayerContext *
     if (_MpCtx->players[0].joined)
     {
         char p1_text[64];
-        const char *status = _MpCtx->players[0].alive ? "" : " [DEAD]";
+        // Don't show DEAD status during countdown
+        const char *status = (_MpCtx->players[0].alive || _MpCtx->state == MP_STATE_COUNTDOWN) ? "" : " [DEAD]";
         snprintf(p1_text, sizeof(p1_text), "P1: %d%s", _MpCtx->players[0].score, status);
 
         SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontSmall, p1_text, player_colors[0]);
@@ -2242,7 +2243,8 @@ void Renderer_DrawMultiplayerHudBorder(Renderer *_Renderer, MultiplayerContext *
     if (_MpCtx->players[1].joined)
     {
         char p2_text[64];
-        const char *status = _MpCtx->players[1].alive ? "" : " [DEAD]";
+        // Don't show DEAD status during countdown
+        const char *status = (_MpCtx->players[1].alive || _MpCtx->state == MP_STATE_COUNTDOWN) ? "" : " [DEAD]";
         snprintf(p2_text, sizeof(p2_text), "P2: %d%s", _MpCtx->players[1].score, status);
 
         SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontSmall, p2_text, player_colors[1]);
