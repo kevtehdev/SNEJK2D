@@ -26,26 +26,41 @@ void Snake_Init(Snake *_Snake)
 
 void Snake_SetDirection(Snake *_Snake, Direction _Dir)
 {
-    // Check what direction to validate against (last buffered or current)
-    Direction lastDir = _Snake->direction;
+    // Always prevent 180-degree turns from CURRENT direction (professional snake behavior)
+    if ((_Snake->direction == DIR_UP && _Dir == DIR_DOWN) ||
+        (_Snake->direction == DIR_DOWN && _Dir == DIR_UP) ||
+        (_Snake->direction == DIR_LEFT && _Dir == DIR_RIGHT) ||
+        (_Snake->direction == DIR_RIGHT && _Dir == DIR_LEFT))
+    {
+        return;
+    }
+
+    // Also check against last buffered direction to prevent chained 180° turns
     if (_Snake->inputBuffer.count > 0)
     {
-        lastDir = _Snake->inputBuffer.buffer[_Snake->inputBuffer.count - 1];
-    }
+        Direction lastBuffered = _Snake->inputBuffer.buffer[_Snake->inputBuffer.count - 1];
 
-    // Prevent 180-degree turns
-    if ((lastDir == DIR_UP && _Dir == DIR_DOWN) ||
-        (lastDir == DIR_DOWN && _Dir == DIR_UP) ||
-        (lastDir == DIR_LEFT && _Dir == DIR_RIGHT) ||
-        (lastDir == DIR_RIGHT && _Dir == DIR_LEFT))
-    {
-        return;
-    }
+        if ((lastBuffered == DIR_UP && _Dir == DIR_DOWN) ||
+            (lastBuffered == DIR_DOWN && _Dir == DIR_UP) ||
+            (lastBuffered == DIR_LEFT && _Dir == DIR_RIGHT) ||
+            (lastBuffered == DIR_RIGHT && _Dir == DIR_LEFT))
+        {
+            return;
+        }
 
-    // Don't buffer duplicate directions
-    if (_Dir == lastDir)
+        // Don't buffer duplicate directions
+        if (_Dir == lastBuffered)
+        {
+            return;
+        }
+    }
+    else
     {
-        return;
+        // Don't buffer if same as current direction
+        if (_Dir == _Snake->direction)
+        {
+            return;
+        }
     }
 
     // Add to buffer if space available
