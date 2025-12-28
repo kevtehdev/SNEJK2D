@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.3.4] - 2025-12-28
+
+### Security
+- Fixed buffer overflow vulnerabilities in string operations
+  - Replaced unsafe `strcat()` with `strncat()` in chat and nickname input
+  - Replaced unsafe `strcpy()` with `memmove()` and `strncpy()`
+- Fixed potential race conditions in multiplayer threading
+  - Added mutex protection for thread state variables
+- Memory leak analysis: Valgrind confirms zero memory leaks
+
+### Gameplay
+- Fixed snake tail collision detection
+  - You can no longer collide with your own tail (it moves away)
+  - Allows for tighter turns and professional Snake gameplay
+  - Matches classic Snake behavior (Nokia, Google Snake)
+
+### Technical
+- All string operations now use bounds-checked functions
+- Thread-safe multiplayer connection handling
+- Improved code quality and security practices
+
 ## [1.3.3] - 2025-12-27
 
 ### Power-Ups
