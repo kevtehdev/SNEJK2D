@@ -131,7 +131,17 @@ bool Renderer_Init(Renderer *_Renderer)
     _Renderer->backgrounds[4].scrollSpeeds[1] = 1.0f;
     _Renderer->backgrounds[4].scrollOffset = 0.0f;
 
-    printf("✓ Loaded 5 parallax backgrounds\n");
+    /* 5: City Night */
+    _Renderer->backgrounds[5].numLayers = 3;
+    _Renderer->backgrounds[5].layers[0] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/city/back.png");
+    _Renderer->backgrounds[5].layers[1] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/city/middle.png");
+    _Renderer->backgrounds[5].layers[2] = loadTexture(_Renderer->sdlRenderer, "assets/backgrounds/city/foreground.png");
+    _Renderer->backgrounds[5].scrollSpeeds[0] = 0.2f;
+    _Renderer->backgrounds[5].scrollSpeeds[1] = 0.5f;
+    _Renderer->backgrounds[5].scrollSpeeds[2] = 1.0f;
+    _Renderer->backgrounds[5].scrollOffset = 0.0f;
+
+    printf("✓ Loaded 6 parallax backgrounds\n");
 
     /* No sprites - using solid colors for walls and effects */
     for (int i = 0; i < 8; i++)

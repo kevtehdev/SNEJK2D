@@ -64,13 +64,13 @@ bool Audio_Init(AudioSystem *_Audio)
         fprintf(stderr, "Warning: Failed to load menu music: %s\n", Mix_GetError());
     }
 
-    _Audio->singleplayerMusic = Mix_LoadMUS("assets/music/singleplayer.ogg");
+    _Audio->singleplayerMusic = Mix_LoadMUS("assets/music/cyberpunk-street.ogg");
     if (!_Audio->singleplayerMusic)
     {
         fprintf(stderr, "Warning: Failed to load singleplayer music: %s\n", Mix_GetError());
     }
 
-    _Audio->multiplayerMusic = Mix_LoadMUS("assets/music/multiplayer.ogg");
+    _Audio->multiplayerMusic = Mix_LoadMUS("assets/music/cyberpunk-street.ogg");
     if (!_Audio->multiplayerMusic)
     {
         fprintf(stderr, "Warning: Failed to load multiplayer music: %s\n", Mix_GetError());
