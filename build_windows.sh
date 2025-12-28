@@ -6,10 +6,10 @@ set -e
 echo "Building SNEJK2D for Windows..."
 
 # SDL2 paths in /tmp
-SDL2_BASE="/tmp/SDL2-2.28.5/x86_64-w64-mingw32"
-SDL2_IMAGE_BASE="/tmp/SDL2_image-2.6.3/x86_64-w64-mingw32"
-SDL2_MIXER_BASE="/tmp/SDL2_mixer-2.6.3/x86_64-w64-mingw32"
-SDL2_TTF_BASE="/tmp/SDL2_ttf-2.20.2/x86_64-w64-mingw32"
+SDL2_BASE="/tmp/SDL2-2.30.0/x86_64-w64-mingw32"
+SDL2_IMAGE_BASE="/tmp/SDL2_image-2.8.2/x86_64-w64-mingw32"
+SDL2_MIXER_BASE="/tmp/SDL2_mixer-2.8.0/x86_64-w64-mingw32"
+SDL2_TTF_BASE="/tmp/SDL2_ttf-2.22.0/x86_64-w64-mingw32"
 
 # Compiler
 CC=x86_64-w64-mingw32-gcc
