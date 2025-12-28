@@ -26,41 +26,26 @@ void Snake_Init(Snake *_Snake)
 
 void Snake_SetDirection(Snake *_Snake, Direction _Dir)
 {
-    // Always prevent 180-degree turns from CURRENT direction (professional snake behavior)
-    if ((_Snake->direction == DIR_UP && _Dir == DIR_DOWN) ||
-        (_Snake->direction == DIR_DOWN && _Dir == DIR_UP) ||
-        (_Snake->direction == DIR_LEFT && _Dir == DIR_RIGHT) ||
-        (_Snake->direction == DIR_RIGHT && _Dir == DIR_LEFT))
+    // Determine what direction to validate against
+    Direction checkDir = _Snake->direction;
+    if (_Snake->inputBuffer.count > 0)
+    {
+        checkDir = _Snake->inputBuffer.buffer[_Snake->inputBuffer.count - 1];
+    }
+
+    // Prevent 180-degree turns
+    if ((checkDir == DIR_UP && _Dir == DIR_DOWN) ||
+        (checkDir == DIR_DOWN && _Dir == DIR_UP) ||
+        (checkDir == DIR_LEFT && _Dir == DIR_RIGHT) ||
+        (checkDir == DIR_RIGHT && _Dir == DIR_LEFT))
     {
         return;
     }
 
-    // Also check against last buffered direction to prevent chained 180° turns
-    if (_Snake->inputBuffer.count > 0)
+    // Don't buffer duplicate directions
+    if (_Dir == checkDir)
     {
-        Direction lastBuffered = _Snake->inputBuffer.buffer[_Snake->inputBuffer.count - 1];
-
-        if ((lastBuffered == DIR_UP && _Dir == DIR_DOWN) ||
-            (lastBuffered == DIR_DOWN && _Dir == DIR_UP) ||
-            (lastBuffered == DIR_LEFT && _Dir == DIR_RIGHT) ||
-            (lastBuffered == DIR_RIGHT && _Dir == DIR_LEFT))
-        {
-            return;
-        }
-
-        // Don't buffer duplicate directions
-        if (_Dir == lastBuffered)
-        {
-            return;
-        }
-    }
-    else
-    {
-        // Don't buffer if same as current direction
-        if (_Dir == _Snake->direction)
-        {
-            return;
-        }
+        return;
     }
 
     // Add to buffer if space available
@@ -142,7 +127,8 @@ bool Snake_CheckSelfCollision(Snake *_Snake)
     Position head = _Snake->segments[0];
 
     // Check if head collides with any body segment
-    for (int i = 1; i < _Snake->length; i++)
+    // Exclude tail (last segment) since it moves away
+    for (int i = 1; i < _Snake->length - 1; i++)
     {
         if (head.x == _Snake->segments[i].x &&
             head.y == _Snake->segments[i].y)
