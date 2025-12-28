@@ -76,7 +76,7 @@
 // Background overlay & Background count
 
 #define BACKGROUND_OVERLAY_ALPHA 180
-#define NUM_BACKGROUNDS 5
+#define NUM_BACKGROUNDS 6
 
 // Multiplayer identification
 
