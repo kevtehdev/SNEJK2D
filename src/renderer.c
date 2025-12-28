@@ -1810,7 +1810,8 @@ void Renderer_DrawMultiplayerBrowse(Renderer *_Renderer, MultiplayerContext *_Mp
             if (strlen(name_to_show) > 20)
             {
                 strncpy(short_name, name_to_show, 17);
-                strcpy(short_name + 17, "...");
+                short_name[17] = '\0';
+                strncat(short_name, "...", sizeof(short_name) - strlen(short_name) - 1);
                 name_to_show = short_name;
             }
 

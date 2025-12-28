@@ -295,7 +295,8 @@ static void mpapiEventCallback(const char *event, int64_t messageId, const char 
                 {
                     for (int i = 0; i < 9; i++)
                     {
-                        strcpy(ctx->chatMessages[i], ctx->chatMessages[i + 1]);
+                        memmove(ctx->chatMessages[i], ctx->chatMessages[i + 1],
+                                sizeof(ctx->chatMessages[0]));
                     }
                     ctx->chatCount = 9;
                 }
