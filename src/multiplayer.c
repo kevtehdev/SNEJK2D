@@ -624,12 +624,12 @@ int Multiplayer_Host(MultiplayerContext *_Ctx, const char *_PlayerName)
     _Ctx->gameMode = (_Ctx->modeSelection == 0) ? MP_MODE_TURN_BATTLE : MP_MODE_1VS1;
 
     // Map names with de_ prefix
-    const char *mapNames[] = {"de_cyberpunk", "de_forest", "de_underwater", "de_mountain", "de_country"};
+    const char *mapNames[] = {"de_cyberpunk", "de_forest", "de_underwater", "de_mountain", "de_country", "de_city"};
     const char *modeNames[] = {"TURN BATTLE", "1VS1"};
 
     printf("DEBUG: selectedBackground = %d (%s), gameMode = %s\n",
            _Ctx->selectedBackground,
-           mapNames[_Ctx->selectedBackground % 5],
+           mapNames[_Ctx->selectedBackground % 6],
            modeNames[_Ctx->gameMode]);
 
     // Format room name with student number, map ID and game mode encoded in the name
@@ -1605,7 +1605,7 @@ int Multiplayer_BrowseGames(MultiplayerContext *_Ctx)
             {
                 // Found map marker, extract the number
                 int parsedMapId = atoi(mapMarker + 2); // Skip "|m"
-                if (parsedMapId >= 0 && parsedMapId < 5)
+                if (parsedMapId >= 0 && parsedMapId < 6)
                 {
                     mapId = parsedMapId;
                     printf("✓ Parsed map ID %d from game name\n", mapId);
