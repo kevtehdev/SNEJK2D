@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.7] - 2025-12-28
+
+### Bug Fixes
+- Fixed XP bar and level display in multiplayer Turn Battle mode
+  - XP bar now shows correctly during Power-Up mode gameplay
+  - Level display now appears in top HUD border
+  - "LEVEL X!" animation now triggers on level-up in multiplayer
+  - Combo multiplier info now visible in Turn Battle
+
 ## [1.3.6] - 2025-12-28
 
 ### Audio
