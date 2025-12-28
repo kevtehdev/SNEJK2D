@@ -146,8 +146,10 @@ void Input_HandleGameMenuInput(Game *_Game, SDL_Event *_Event)
     }
 }
 
-void Input_HandlePlayingInput(Game *_Game, SDL_Event *_Event)
+void Input_HandlePlayingInput(Game *_Game, SDL_Event *_Event, void *_Audio)
 {
+    AudioSystem *audio = (AudioSystem *)_Audio;
+
     if (_Event->type == SDL_KEYDOWN)
     {
         Direction dir;
@@ -174,6 +176,17 @@ void Input_HandlePlayingInput(Game *_Game, SDL_Event *_Event)
         case SDLK_d:
             dir = DIR_RIGHT;
             hasInput = true;
+            break;
+        case SDLK_PLUS:
+        case SDLK_KP_PLUS:
+        case SDLK_EQUALS:  // On many keyboards, + is Shift+Equals
+            if (audio)
+                Audio_IncreaseVolume(audio);
+            break;
+        case SDLK_MINUS:
+        case SDLK_KP_MINUS:
+            if (audio)
+                Audio_DecreaseVolume(audio);
             break;
         case SDLK_ESCAPE:
             _Game->state = GAME_PAUSED;
@@ -386,8 +399,10 @@ void Input_HandleOptionsInput(Game *_Game, SDL_Event *_Event, void *_Audio)
     (void)_Audio; // Reserved for audio volume updates
 }
 
-void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event, Game *_Game)
+void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event, Game *_Game, void *_Audio)
 {
+    AudioSystem *audio = (AudioSystem *)_Audio;
+
     if (!_MpCtx)
         return;
 
@@ -911,6 +926,17 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
                 dir = DIR_RIGHT;
                 hasInput = true;
                 break;
+            case SDLK_PLUS:
+            case SDLK_KP_PLUS:
+            case SDLK_EQUALS:
+                if (audio)
+                    Audio_IncreaseVolume(audio);
+                break;
+            case SDLK_MINUS:
+            case SDLK_KP_MINUS:
+                if (audio)
+                    Audio_DecreaseVolume(audio);
+                break;
             }
 
             if (hasInput)
@@ -944,6 +970,17 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
             case SDLK_d:
                 dir = DIR_RIGHT;
                 hasInput = true;
+                break;
+            case SDLK_PLUS:
+            case SDLK_KP_PLUS:
+            case SDLK_EQUALS:
+                if (audio)
+                    Audio_IncreaseVolume(audio);
+                break;
+            case SDLK_MINUS:
+            case SDLK_KP_MINUS:
+                if (audio)
+                    Audio_DecreaseVolume(audio);
                 break;
             case SDLK_ESCAPE:
                 // Broadcast disconnect to clients if host
@@ -1000,7 +1037,7 @@ void Input_HandleInput(Game *_Game, SDL_Event *_Event, MultiplayerContext **_MpC
     }
     else if (_Game->state == GAME_PLAYING)
     {
-        Input_HandlePlayingInput(_Game, _Event);
+        Input_HandlePlayingInput(_Game, _Event, _Audio);
     }
     else if (_Game->state == GAME_OVER)
     {
@@ -1042,7 +1079,7 @@ void Input_HandleInput(Game *_Game, SDL_Event *_Event, MultiplayerContext **_MpC
         }
         else
         {
-            Input_HandleMultiplayerInput(mpCtx, _Event, _Game);
+            Input_HandleMultiplayerInput(mpCtx, _Event, _Game, _Audio);
 
             // Check if player wants to disconnect and clean up
             if (mpCtx && mpCtx->state == MP_STATE_DISCONNECTED)

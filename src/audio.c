@@ -174,10 +174,25 @@ void Audio_SetVolume(AudioSystem *_Audio, float _Volume)
 
     if (_Audio->initialized)
     {
-        Mix_Volume(-1, (int)(_Volume * MIX_MAX_VOLUME));
+        Mix_VolumeMusic((int)(_Volume * MIX_MAX_VOLUME));
+        Mix_Volume(-1, (int)(_Volume * 80));  // Match the volume used in Audio_PlaySound
     }
 
-    printf("Volume set to: %.0f%%\n", _Volume * 100);
+    printf("Volume: %.0f%%\n", _Volume * 100);
+}
+
+void Audio_IncreaseVolume(AudioSystem *_Audio)
+{
+    float newVolume = _Audio->masterVolume + 0.1f;
+    if (newVolume > 1.0f) newVolume = 1.0f;
+    Audio_SetVolume(_Audio, newVolume);
+}
+
+void Audio_DecreaseVolume(AudioSystem *_Audio)
+{
+    float newVolume = _Audio->masterVolume - 0.1f;
+    if (newVolume < 0.0f) newVolume = 0.0f;
+    Audio_SetVolume(_Audio, newVolume);
 }
 
 void Audio_ToggleMusic(AudioSystem *_Audio)
