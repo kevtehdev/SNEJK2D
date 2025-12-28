@@ -3010,7 +3010,7 @@ void Renderer_DrawScoreboard(Renderer *_Renderer, Scoreboard *_Scoreboard, unsig
         {
             SDL_Rect inst_dest = {
                 WINDOW_WIDTH / 2 - inst_surf->w / 2,
-                WINDOW_HEIGHT - 60,
+                WINDOW_HEIGHT - 35,
                 inst_surf->w,
                 inst_surf->h};
             SDL_RenderCopy(_Renderer->sdlRenderer, inst_tex, NULL, &inst_dest);

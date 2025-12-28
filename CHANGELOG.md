@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.3.6] - 2025-12-28
+
+### Audio
+- Added in-game volume controls
+  - Press `+` or `=` to increase volume
+  - Press `-` to decrease volume
+  - Works in both singleplayer and multiplayer
+  - Volume adjusts in 10% increments (0-100%)
+
+### Documentation
+- Added comprehensive asset attribution (assets/ASSETS_LICENSE.md)
+  - All backgrounds by Ansimuz (Forest, Mountain, Cyberpunk, City, Country, Underwater)
+  - Medals by Buch from OpenGameArt (CC0 license)
+  - Music by Troubadeck
+  - PressStart2P font from Google Fonts (SIL OFL 1.1)
+- Improved README with detailed power-up scoring information
+  - Regular food: +10 points
+  - Golden Apple: +100 points
+  - Speed Boost: +20 points
+  - Score Multiplier: +50 points
+  - Combo system explained (1.5x, 2x, 3x, 5x multipliers)
+
+### UI
+- Fixed scoreboard "ESC BACK" text position (no longer overlaps #4 position)
+
 ## [1.3.4] - 2025-12-28
 
 ### Security

@@ -35,6 +35,8 @@ void Audio_PlaySound(AudioSystem *_Audio, SoundType _Sound);
 void Audio_StopSound(AudioSystem *_Audio, SoundType _Sound);
 
 void Audio_SetVolume(AudioSystem *_Audio, float _Volume);
+void Audio_IncreaseVolume(AudioSystem *_Audio);
+void Audio_DecreaseVolume(AudioSystem *_Audio);
 void Audio_ToggleMusic(AudioSystem *_Audio);
 void Audio_ToggleSfx(AudioSystem *_Audio);
 
