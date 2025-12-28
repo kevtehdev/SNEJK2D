@@ -407,7 +407,7 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
             size_t len = strlen(_Event->text.text);
             if (_MpCtx->chatInputLen + len < 127)
             {
-                strcat(_MpCtx->chatInput, _Event->text.text);
+                strncat(_MpCtx->chatInput, _Event->text.text, 127 - _MpCtx->chatInputLen);
                 _MpCtx->chatInputLen += len;
             }
         }
@@ -424,7 +424,7 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
             size_t len = strlen(_Event->text.text);
             if (_MpCtx->nickInputLen + len < 31)
             {
-                strcat(_MpCtx->nickInput, _Event->text.text);
+                strncat(_MpCtx->nickInput, _Event->text.text, 31 - _MpCtx->nickInputLen);
                 _MpCtx->nickInputLen += len;
             }
         }
@@ -758,7 +758,8 @@ void Input_HandleMultiplayerInput(MultiplayerContext *_MpCtx, SDL_Event *_Event,
                     {
                         for (int i = 0; i < 9; i++)
                         {
-                            strcpy(_MpCtx->chatMessages[i], _MpCtx->chatMessages[i + 1]);
+                            memmove(_MpCtx->chatMessages[i], _MpCtx->chatMessages[i + 1],
+                                    sizeof(_MpCtx->chatMessages[0]));
                         }
                         _MpCtx->chatCount = 9;
                     }
