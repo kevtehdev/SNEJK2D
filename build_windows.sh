@@ -39,7 +39,7 @@ SOURCES="$SOURCES src/mpapi/c_client/libs/mpapi.c"
 SOURCES="$SOURCES src/mpapi/c_client/libs/jansson/*.c"
 
 # Output
-OUTPUT="snejk2d.exe"
+OUTPUT="SNEJK2D.exe"
 
 echo "Compiling source files..."
 $CC $CFLAGS $INCLUDES $SOURCES $LIBS -o $OUTPUT
@@ -54,10 +54,16 @@ if [ -f "$OUTPUT" ]; then
     cp $SDL2_MIXER_BASE/bin/*.dll .
     cp $SDL2_TTF_BASE/bin/*.dll .
 
+    # Copy libwinpthread-1.dll (required for threading)
+    if [ -f "win64_deps/dlls/libwinpthread-1.dll" ]; then
+        cp win64_deps/dlls/libwinpthread-1.dll .
+        echo "✓ Copied libwinpthread-1.dll"
+    fi
+
     echo "✓ Windows build complete!"
     echo ""
     echo "Files created:"
-    ls -lh snejk2d.exe *.dll | awk '{print "  " $9 " (" $5 ")"}'
+    ls -lh SNEJK2D.exe *.dll | awk '{print "  " $9 " (" $5 ")"}'
 else
     echo "✗ Build failed!"
     exit 1
