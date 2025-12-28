@@ -22,11 +22,26 @@ snejk2d.exe
 Traditional snake gameplay. Eat food, grow longer, avoid walls and yourself.
 
 **Power-Up Mode**
-Enhanced gameplay with collectible power-ups and a level system:
-- **Golden Apple** (yellow): +3 length
-- **Speed Boost** (cyan): temporary speed increase
-- **Score Multiplier** (magenta): 10x points for 5 seconds
+Enhanced gameplay with collectible power-ups, combo system, and level progression:
 
+**Regular Food** (red apple):
+- +1 length
+- +10 points (affected by combo multiplier and active power-ups)
+- +10 XP
+
+**Power-Ups:**
+- **Golden Apple** (yellow): +3 length, +100 points, +5 combo
+- **Speed Boost** (cyan): +20 points, +1 combo, temporary speed increase
+- **Score Multiplier** (magenta): +50 points, +3 combo, 10x score multiplier for 5 seconds
+
+**Combo System:**
+Eating food quickly builds combos that multiply your score:
+- 3+ combo: 1.5x multiplier
+- 6+ combo: 2x multiplier
+- 10+ combo: 3x multiplier
+- 15+ combo: 5x multiplier
+
+**Level System:**
 Gain 10 XP per food eaten. Level up at 100, 150, 200, 250 XP and beyond.
 
 ### Multiplayer
@@ -87,4 +102,6 @@ This prevents audio conflicts when running multiple instances.
 
 ## License
 
-See LICENSE file for details.
+This project uses the MIT License for code. See the [LICENSE](LICENSE) file for details.
+
+For third-party assets (graphics, music, fonts), see [assets/ASSETS_LICENSE.md](assets/ASSETS_LICENSE.md) for full attribution and licensing information.
