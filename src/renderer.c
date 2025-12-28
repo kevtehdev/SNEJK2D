@@ -2505,10 +2505,66 @@ void Renderer_DrawTurnPlaying(Renderer *_Renderer, MultiplayerContext *_MpCtx)
         }
     }
 
-    // Draw HUD border - show attempt during countdown, score during gameplay
-    bool showAttempt = (_MpCtx->state == MP_STATE_COUNTDOWN);
-    Renderer_DrawHudBorderWithScore(_Renderer, _MpCtx->localGame.snake.score,
-                                    _MpCtx->currentAttempt, showAttempt);
+    // Draw HUD border with full info (XP, level, combo) in Power-Up mode
+    // Show attempt number during countdown
+    if (_MpCtx->state == MP_STATE_COUNTDOWN)
+    {
+        Renderer_DrawHudBorderWithScore(_Renderer, _MpCtx->localGame.snake.score,
+                                        _MpCtx->currentAttempt, true);
+    }
+    else
+    {
+        Renderer_DrawHudBorderWithCombo(_Renderer, _MpCtx->localGame.snake.score,
+                                        _MpCtx->localGame.comboCount,
+                                        _MpCtx->localGame.comboMultiplier,
+                                        _MpCtx->localGame.gameMode,
+                                        true, // combo effects
+                                        _MpCtx->localGame.level,
+                                        _MpCtx->localGame.xp,
+                                        _MpCtx->localGame.xpToNextLevel);
+    }
+
+    // Draw level-up effect (Power-Up mode only)
+    if (_MpCtx->localGame.levelUpActive && _MpCtx->localGame.gameMode == MODE_POWERUP)
+    {
+        unsigned int currentTime = SDL_GetTicks();
+        unsigned int elapsed = currentTime - _MpCtx->localGame.levelUpStartTime;
+        const unsigned int effectDuration = 2000; // 2 seconds
+
+        if (elapsed < effectDuration)
+        {
+            float progress = (float)elapsed / (float)effectDuration;
+            float scale = 2.0f - progress;
+            int alpha = (int)(255 * (1.0f - progress));
+
+            char levelText[32];
+            snprintf(levelText, sizeof(levelText), "LEVEL %d!", _MpCtx->localGame.level);
+
+            SDL_Color cyan = {100, 220, 255, (Uint8)alpha};
+            SDL_Surface *surface = TTF_RenderText_Solid(_Renderer->fontLarge, levelText, cyan);
+            if (surface)
+            {
+                SDL_Texture *texture = SDL_CreateTextureFromSurface(_Renderer->sdlRenderer, surface);
+                if (texture)
+                {
+                    int w = (int)(surface->w * scale);
+                    int h = (int)(surface->h * scale);
+                    SDL_Rect dest = {
+                        WINDOW_WIDTH / 2 - w / 2,
+                        WINDOW_HEIGHT / 2 - h / 2,
+                        w, h};
+                    SDL_SetTextureAlphaMod(texture, (Uint8)alpha);
+                    SDL_RenderCopy(_Renderer->sdlRenderer, texture, NULL, &dest);
+                    SDL_DestroyTexture(texture);
+                }
+                SDL_FreeSurface(surface);
+            }
+        }
+        else
+        {
+            _MpCtx->localGame.levelUpActive = false;
+        }
+    }
 }
 
 /* Draw turn waiting screen */
