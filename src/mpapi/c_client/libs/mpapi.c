@@ -122,7 +122,11 @@ mpapi *mpapi_create(const char *server_host, uint16_t server_port, const char *i
 void mpapi_destroy(mpapi *api) {
     if (!api) return;
 
-    if (api->recv_thread_started && api->sockfd >= 0) {
+    pthread_mutex_lock(&api->lock);
+    int thread_started = api->recv_thread_started;
+    pthread_mutex_unlock(&api->lock);
+
+    if (thread_started && api->sockfd >= 0) {
         shutdown(api->sockfd, SHUT_RDWR);
         pthread_join(api->recv_thread, NULL);
     }
@@ -822,17 +826,26 @@ static void *recv_thread_main(void *arg) {
 
 static int start_recv_thread(mpapi *api) {
     if (!api) return MPAPI_ERR_ARGUMENT;
+
+    pthread_mutex_lock(&api->lock);
     if (api->recv_thread_started) {
+        pthread_mutex_unlock(&api->lock);
         return MPAPI_OK;
     }
 
     api->running = 1;
+    pthread_mutex_unlock(&api->lock);
+
     int rc = pthread_create(&api->recv_thread, NULL, recv_thread_main, api);
+
+    pthread_mutex_lock(&api->lock);
     if (rc != 0) {
         api->running = 0;
+        pthread_mutex_unlock(&api->lock);
         return MPAPI_ERR_IO;
     }
 
     api->recv_thread_started = 1;
+    pthread_mutex_unlock(&api->lock);
     return MPAPI_OK;
 }
