@@ -307,8 +307,9 @@ void Game_Update(Game *_Game)
                              nextHead.y < PLAYABLE_MIN_Y || nextHead.y > PLAYABLE_MAX_Y);
 
         // Check if next position would collide with self
+        // Exclude tail (last segment) since it moves away
         bool wouldHitSelf = false;
-        for (int i = 1; i < _Game->snake.length; i++)
+        for (int i = 1; i < _Game->snake.length - 1; i++)
         {
             if (nextHead.x == _Game->snake.segments[i].x &&
                 nextHead.y == _Game->snake.segments[i].y)
