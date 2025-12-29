@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.4.1] - 2025-12-29
+
+### Performance
+- Removed excessive debug printf statements from state_multiplayer.c
+  - Statements were printing 60 times per second causing console flooding
+  - Improved performance and reduced terminal spam
+
 ## [v1.4.0] - 2025-12-29
 
 ### Code Refactoring
