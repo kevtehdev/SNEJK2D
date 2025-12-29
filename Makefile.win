@@ -11,11 +11,11 @@ BUILD_DIR=build-win
 MPAPI_DIR=$(SRC_DIR)/mpapi/c_client/libs
 
 # Windows SDL2 paths
-WIN_SDL=/tmp/win-libs
-SDL2_DIR=$(WIN_SDL)/SDL2-2.30.0/x86_64-w64-mingw32
-SDL2_IMAGE_DIR=$(WIN_SDL)/SDL2_image-2.8.2/x86_64-w64-mingw32
-SDL2_TTF_DIR=$(WIN_SDL)/SDL2_ttf-2.22.0/x86_64-w64-mingw32
-SDL2_MIXER_DIR=$(WIN_SDL)/SDL2_mixer-2.8.0/x86_64-w64-mingw32
+WIN_SDL_ROOT=/tmp
+SDL2_DIR=SDL2-2.30.0/x86_64-w64-mingw32
+SDL2_IMAGE_DIR=$(WIN_SDL_ROOT)/SDL2_image-2.8.2/x86_64-w64-mingw32
+SDL2_TTF_DIR=$(WIN_SDL_ROOT)/SDL2_ttf-2.22.0/x86_64-w64-mingw32
+SDL2_MIXER_DIR=$(WIN_SDL_ROOT)/SDL2_mixer-2.8.0/x86_64-w64-mingw32
 
 # Compiler flags
 CFLAGS=-Wall -Wextra -O2 -std=c11 \
