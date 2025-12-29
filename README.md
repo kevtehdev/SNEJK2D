@@ -1,110 +1,98 @@
 # SNEJK2D
 
-A modern Snake game with singleplayer and online multiplayer. Built with SDL2 in C.
+snake game with multiplayer. nothing fancy, just works.
 
-## Quick Start
+## what is this
 
-**Linux:**
+reimagined snake built with SDL2 in C. started as a weekend project, turned into something i actually wanted to play with friends.
+
+features:
+- classic snake mechanics (eat, grow, don't hit walls)
+- power-ups and combo system if you're into that
+- online multiplayer for up to 10 players
+- no ads, no bs, just snake
+
+## how to run
+
+download from releases, extract, run the executable.
+
+**linux:** `./snejk2d`
+**windows:** `snejk2d.exe`
+
+## game modes
+
+### singleplayer
+
+**classic** - you know how this works. eat apples, get longer, try not to die.
+
+**power-up mode** - same thing but with extra stuff:
+- golden apples (yellow) give you bonus points
+- speed boosts (cyan) make you go fast for a bit
+- score multipliers (magenta) are basically cheat codes for 5 seconds
+- combo system rewards you for eating fast
+- level up by eating food (10 xp per apple)
+
+### multiplayer
+
+**1vs1** - two players, one winner. straightforward competitive snake.
+
+**turn battle** - everyone gets 3 tries, best score wins. works with 2-10 players. host picks classic or power-up mode before starting.
+
+multiplayer uses session codes. one person hosts, others join with the code. that's it.
+
+## controls
+
+**menus:**
+arrow keys or wasd to move around, enter to select, esc to go back
+
+**in game:**
+arrow keys or wasd to move the snake
+`+` or `=` to turn up volume
+`-` to turn down volume
+esc to pause
+
+**multiplayer lobby:**
+space to ready up
+enter to start (if you're host)
+c for chat
+n to change your name
+arrow keys to switch modes (turn battle only, host only)
+
+## building it yourself
+
+you'll need SDL2, SDL2_image, SDL2_ttf, SDL2_mixer, and some other stuff.
+
+**linux/wsl:**
 ```bash
+make deps    # gets everything you need
+make         # builds the game
+```
+
+**windows:**
+cross-compile with mingw. check `build_windows.sh` if you really want to do this.
+
+## testing multiplayer locally
+
+run two instances:
+```bash
+# terminal 1 (normal)
 ./snejk2d
-```
 
-**Windows:**
-```bash
-snejk2d.exe
-```
-
-## Game Modes
-
-### Singleplayer
-
-**Classic Mode**
-Traditional snake gameplay. Eat food, grow longer, avoid walls and yourself.
-
-**Power-Up Mode**
-Enhanced gameplay with collectible power-ups, combo system, and level progression:
-
-**Regular Food** (red apple):
-- +1 length
-- +10 points (affected by combo multiplier and active power-ups)
-- +10 XP
-
-**Power-Ups:**
-- **Golden Apple** (yellow): +3 length, +100 points, +5 combo
-- **Speed Boost** (cyan): +20 points, +1 combo, temporary speed increase
-- **Score Multiplier** (magenta): +50 points, +3 combo, 10x score multiplier for 5 seconds
-
-**Combo System:**
-Eating food quickly builds combos that multiply your score:
-- 3+ combo: 1.5x multiplier
-- 6+ combo: 2x multiplier
-- 10+ combo: 3x multiplier
-- 15+ combo: 5x multiplier
-
-**Level System:**
-Gain 10 XP per food eaten. Level up at 100, 150, 200, 250 XP and beyond.
-
-### Multiplayer
-
-Supports up to 10 players online. One player hosts, others join using the session code.
-
-**1VS1 Mode** (2 players)
-Classic competitive mode. First to die loses.
-
-**Turn Battle Mode** (up to 10 players)
-Each player gets 3 solo attempts. Highest score wins. Host can choose between Classic and Power-Up gameplay using arrow keys in the lobby.
-
-## Controls
-
-**Menus:**
-- Arrow keys / WASD: Navigate
-- Enter: Select
-- ESC: Back
-
-**In-Game:**
-- Arrow keys / WASD: Move snake
-- + / =: Increase volume
-- -: Decrease volume
-- ESC: Pause
-
-**Multiplayer Lobby:**
-- Space: Ready/unready
-- Enter: Start game (host only)
-- C: Open chat
-- N: Change nickname
-- Arrow keys: Change mode (host only, Turn Battle)
-
-## Building from Source
-
-Requires SDL2, SDL2_image, SDL2_ttf, SDL2_mixer, jansson, and uuid.
-
-**Ubuntu/Debian/WSL2:**
-```bash
-make deps  # Install dependencies
-make       # Build
-```
-
-**Windows:**
-Requires MinGW cross-compiler and SDL2 libraries. See `build_windows.sh` for details.
-
-## Testing Multiplayer Locally
-
-Run two instances on the same machine:
-
-**Terminal 1 (with audio):**
-```bash
-./snejk2d
-```
-
-**Terminal 2 (without audio):**
-```bash
+# terminal 2 (no audio to avoid conflicts)
 SNEJK2D_NO_AUDIO=1 ./snejk2d
 ```
 
-This prevents audio conflicts when running multiple instances.
+## credits
 
-## License
+code is mine, mit license.
 
-This project uses the MIT License for code. See the [LICENSE](LICENSE) file for details.
+assets (backgrounds, music, fonts) are from various creators. full attribution in `assets/ASSETS_LICENSE.md`.
 
-For third-party assets (graphics, music, fonts), see [assets/ASSETS_LICENSE.md](assets/ASSETS_LICENSE.md) for full attribution and licensing information.
+## notes
+
+- backgrounds by ansimuz (forest, mountain, cyberpunk, city, etc)
+- music by troubadeck
+- font is press start 2p from google fonts
+- medals by buch
+
+
