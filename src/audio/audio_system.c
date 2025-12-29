@@ -288,9 +288,10 @@ void Audio_UpdateMusicForState(AudioSystem *_Audio, int _GameState, int _MpState
     }
     else if (_GameState == (int)GAME_MULTIPLAYER)
     {
-        if (_MpState == (int)MP_STATE_PLAYING || _MpState == (int)MP_STATE_COUNTDOWN)
+        if (_MpState == (int)MP_STATE_PLAYING || _MpState == (int)MP_STATE_COUNTDOWN ||
+            _MpState == (int)MP_STATE_TURN_PLAYING)
         {
-            // Multiplayer gameplay
+            // Multiplayer gameplay (1VS1 and Turn Battle)
             if (_GameMusicEnabled)
                 Audio_PlayMultiplayerMusic(_Audio);
             else

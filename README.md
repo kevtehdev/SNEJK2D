@@ -63,8 +63,8 @@ Each player gets 3 solo attempts. Highest score wins. Host can choose between Cl
 
 **In-Game:**
 - Arrow keys / WASD: Move snake
-- + / =: Increase volume
-- -: Decrease volume
+ + / =: Increase volume
+ - / =: Decrease volume
 - ESC: Pause
 
 **Multiplayer Lobby:**
