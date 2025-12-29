@@ -1,5 +1,23 @@
 # Changelog
 
+## [v1.4.0] - 2025-12-29
+
+### Code Refactoring
+- Multiplayer code split into 6 focused modules
+- mp_core.c reduced from 1859 to 768 lines (-59%)
+- New modules: mp_network, mp_host, mp_client, mp_game, mp_turn_battle
+- All functions kept backwards compatible using wrappers
+
+### New Systems
+- Logger system (logs to snejk2d.log for debugging)
+- Runtime config system (loads from snejk2d.conf if present)
+- Debug overlay (toggle with F3 to show FPS and game stats)
+
+### Build System
+- Updated Makefile.win with all new modules
+- Simplified build_windows.sh to use Makefile.win
+- Added *.log files to .gitignore
+
 ## [1.3.7] - 2025-12-28
 
 ### Bug Fixes
