@@ -1,6 +1,9 @@
 #include "../../include/multiplayer/multiplayer.h"
 #include "../../include/multiplayer/mp_network.h"
 #include "../../include/multiplayer/mp_host.h"
+#include "../../include/multiplayer/mp_client.h"
+#include "../../include/multiplayer/mp_game.h"
+#include "../../include/multiplayer/mp_turn_battle.h"
 #include "../../include/audio/audio.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -619,143 +622,12 @@ int Multiplayer_Host(MultiplayerContext *_Ctx, const char *_PlayerName)
 }
 
 // Join a game
+/* NOTE: Implementation moved to mp_client.c */
 int Multiplayer_Join(MultiplayerContext *_Ctx, const char *_SessionId, const char *_PlayerName)
 {
-    if (!_Ctx || !_Ctx->api)
-        return 0;
-
-    printf("Joining session: %s\n", _SessionId);
-
-    _Ctx->isHost = false;
-    _Ctx->state = MP_STATE_JOINING;
-
-    // Register listener BEFORE joining (critical!)
-    _Ctx->listenerId = mpapi_listen(_Ctx->api, mpapiEventCallback, _Ctx);
-    if (_Ctx->listenerId < 0)
-    {
-        printf("Failed to register event listener\n");
-        snprintf(_Ctx->errorMessage, sizeof(_Ctx->errorMessage), "Failed to register event listener");
-        _Ctx->state = MP_STATE_DISCONNECTED;
-        return 0;
-    }
-
-    // Create join data
-    json_t *joinData = json_object();
-    json_object_set_new(joinData, "name", json_string(_PlayerName));
-
-    char *returnedSession = NULL;
-    char *clientId = NULL;
-    json_t *joinResponse = NULL; // Get full response to parse existing clients
-
-    int rc = mpapi_join(_Ctx->api, _SessionId, joinData, &returnedSession, &clientId, &joinResponse);
-    json_decref(joinData);
-
-    if (rc != MPAPI_OK)
-    {
-        printf("Failed to join: error %d\n", rc);
-
-        // Clean up listener since join failed
-        if (_Ctx->listenerId >= 0)
-        {
-            mpapi_unlisten(_Ctx->api, _Ctx->listenerId);
-            _Ctx->listenerId = -1;
-        }
-
-        snprintf(_Ctx->errorMessage, sizeof(_Ctx->errorMessage),
-                 "Failed to join: %s",
-                 rc == MPAPI_ERR_REJECTED ? "Invalid session ID" : "Connection error");
-        _Ctx->state = MP_STATE_DISCONNECTED;
-        return 0;
-    }
-
-    // Store session info
-    if (returnedSession)
-    {
-        strncpy(_Ctx->sessionId, returnedSession, sizeof(_Ctx->sessionId) - 1);
-        free(returnedSession);
-    }
-
-    if (clientId)
-    {
-        strncpy(_Ctx->ourClientId, clientId, sizeof(_Ctx->ourClientId) - 1);
-        _Ctx->ourClientId[sizeof(_Ctx->ourClientId) - 1] = '\0';
-        free(clientId);
-    }
-
-    // Parse join response to get existing players (including ourselves)
-    // The "clients" array contains all clientIds already in the session
-    if (joinResponse && json_is_object(joinResponse))
-    {
-        printf("✓ Parsing join response for existing players\n");
-        json_t *clientsArray = json_object_get(joinResponse, "clients");
-
-        if (json_is_array(clientsArray))
-        {
-            size_t numClients = json_array_size(clientsArray);
-            printf("✓ Found %zu client(s) in session\n", numClients);
-
-            // Add all existing clients as players
-            for (size_t i = 0; i < numClients && i < MAX_MULTIPLAYER_PLAYERS; i++)
-            {
-                json_t *clientIdJson = json_array_get(clientsArray, i);
-                if (json_is_string(clientIdJson))
-                {
-                    const char *cid = json_string_value(clientIdJson);
-
-                    _Ctx->players[i].joined = true;
-                    _Ctx->players[i].ready = false;
-                    _Ctx->players[i].alive = false;
-                    strncpy(_Ctx->players[i].clientId, cid, sizeof(_Ctx->players[i].clientId) - 1);
-                    _Ctx->players[i].clientId[sizeof(_Ctx->players[i].clientId) - 1] = '\0';
-
-                    // Check if this is the local player
-                    if (strcmp(cid, _Ctx->ourClientId) == 0)
-                    {
-                        _Ctx->players[i].isLocal = true;
-                        _Ctx->localPlayerIndex = i;
-                        strncpy(_Ctx->players[i].name, _PlayerName, sizeof(_Ctx->players[i].name) - 1);
-                        _Ctx->players[i].name[sizeof(_Ctx->players[i].name) - 1] = '\0';
-                        printf("✓ Local player at index %zu\n", i);
-                    }
-                    else
-                    {
-                        _Ctx->players[i].isLocal = false;
-                        // Name will be updated when we receive game state from host
-                        snprintf(_Ctx->players[i].name, sizeof(_Ctx->players[i].name), "Player %zu", i + 1);
-                    }
-
-                    // Initialize snake
-                    Snake_Init(&_Ctx->players[i].snake);
-                    if (i == 0)
-                    {
-                        // Player 0 (host) starts on left
-                        _Ctx->players[i].snake.segments[0].x = GRID_WIDTH / 4;
-                    }
-                    else
-                    {
-                        // Player 1+ starts on right
-                        _Ctx->players[i].snake.segments[0].x = (3 * GRID_WIDTH) / 4;
-                    }
-                    _Ctx->players[i].snake.segments[0].y = GRID_HEIGHT / 2;
-                    for (int j = 1; j < _Ctx->players[i].snake.length; j++)
-                    {
-                        _Ctx->players[i].snake.segments[j] = _Ctx->players[i].snake.segments[0];
-                    }
-                }
-            }
-        }
-
-        json_decref(joinResponse);
-    }
-
-    // Listener already registered before join
-    _Ctx->state = MP_STATE_LOBBY;
-
-    printf("Joined session successfully\n");
-    printf("✓ Press SPACE to toggle ready, wait for host to start\n");
-
-    return 1;
+    return MP_Client_Join(_Ctx, _SessionId, _PlayerName);
 }
+
 
 // Host update (called every frame when hosting)
 /* NOTE: Implementation moved to mp_host.c */
@@ -772,29 +644,12 @@ void Multiplayer_HostBroadcastState(MultiplayerContext *_Ctx)
 }
 
 // Client send input
+/* NOTE: Implementation moved to mp_client.c */
 void Multiplayer_ClientSendInput(MultiplayerContext *_Ctx, Direction _Dir)
 {
-    if (!_Ctx || !_Ctx->api || _Ctx->isHost)
-        return;
-
-    int localIdx = Multiplayer_GetLocalPlayerIndex(_Ctx);
-    if (localIdx < 0 || !_Ctx->players[localIdx].alive)
-        return;
-
-    // Send input to server for validation and broadcast
-    json_t *message = json_object();
-    json_object_set_new(message, "type", json_string("input"));
-    json_object_set_new(message, "clientId", json_string(_Ctx->ourClientId));
-    json_object_set_new(message, "direction", json_integer((int)_Dir));
-
-    int rc = mpapi_game(_Ctx->api, message, NULL);
-    if (rc != MPAPI_OK)
-    {
-        printf("Failed to send input: error %d\n", rc);
-    }
-
-    json_decref(message);
+    MP_Client_SendInput(_Ctx, _Dir);
 }
+
 
 // Send lightweight position update for smooth rendering
 void Multiplayer_SendQuickPositionUpdate(MultiplayerContext *_Ctx)
@@ -805,226 +660,52 @@ void Multiplayer_SendQuickPositionUpdate(MultiplayerContext *_Ctx)
 }
 
 // Start game
+/* NOTE: Implementation moved to mp_game.c */
 void Multiplayer_StartGame(MultiplayerContext *_Ctx)
 {
-    if (!_Ctx || !_Ctx->isHost)
-        return;
-
-    json_t *message = json_object();
-    json_object_set_new(message, "type", json_string("start_game"));
-    json_object_set_new(message, "gameMode", json_integer(_Ctx->gameMode));
-
-    int rc = mpapi_game(_Ctx->api, message, NULL);
-    if (rc != MPAPI_OK)
-    {
-        printf("Failed to send start command: error %d\n", rc);
-    }
-
-    json_decref(message);
-
-    // For turn battle, go to ready-up state instead of countdown
-    if (_Ctx->gameMode == MP_MODE_TURN_BATTLE)
-    {
-        _Ctx->state = MP_STATE_READY_UP;
-        printf("Starting TURN BATTLE mode - players ready up\n");
-    }
-    else
-    {
-        _Ctx->state = MP_STATE_COUNTDOWN;
-        _Ctx->countdownStart = SDL_GetTicks();
-        _Ctx->gameStartTime = _Ctx->countdownStart + 3000;
-    }
+    MP_Game_Start(_Ctx);
 }
+
 
 // Restart game (after game over)
+/* NOTE: Implementation moved to mp_game.c */
 void Multiplayer_RestartGame(MultiplayerContext *_Ctx)
 {
-    if (!_Ctx || !_Ctx->isHost)
-        return;
-
-    // Reset game state
-    _Ctx->currentSpeed = BASE_SPEED;
-    _Ctx->gameOverSelection = 0;
-
-    // Reset both players
-    for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
-    {
-        if (_Ctx->players[i].joined)
-        {
-            _Ctx->players[i].alive = true;
-            _Ctx->players[i].score = 0;
-            _Ctx->players[i].comboCount = 0;
-            _Ctx->players[i].comboMultiplier = 1.0f;
-            _Ctx->players[i].lastFoodTime = 0;
-
-            // Reinitialize snake
-            Snake_Init(&_Ctx->players[i].snake);
-
-            // Position players on opposite sides
-            if (i == 0)
-            {
-                _Ctx->players[i].snake.segments[0].x = GRID_WIDTH / 4;
-                _Ctx->players[i].snake.segments[0].y = GRID_HEIGHT / 2;
-            }
-            else
-            {
-                _Ctx->players[i].snake.segments[0].x = (GRID_WIDTH * 3) / 4;
-                _Ctx->players[i].snake.segments[0].y = GRID_HEIGHT / 2;
-            }
-
-            for (int j = 1; j < _Ctx->players[i].snake.length; j++)
-            {
-                _Ctx->players[i].snake.segments[j].x = _Ctx->players[i].snake.segments[0].x - j;
-                _Ctx->players[i].snake.segments[j].y = _Ctx->players[i].snake.segments[0].y;
-            }
-        }
-    }
-
-    // Respawn food
-    _Ctx->food[0].x = PLAYABLE_MIN_X + 5;
-    _Ctx->food[0].y = PLAYABLE_MIN_Y + 5;
-    _Ctx->food[1].x = PLAYABLE_MAX_X - 5;
-    _Ctx->food[1].y = PLAYABLE_MAX_Y - 5;
-
-    // Send restart command to client
-    json_t *message = json_object();
-    json_object_set_new(message, "type", json_string("restart_game"));
-
-    int rc = mpapi_game(_Ctx->api, message, NULL);
-    if (rc != MPAPI_OK)
-    {
-        printf("Failed to send restart command: error %d\n", rc);
-    }
-
-    json_decref(message);
-
-    // Go to countdown
-    _Ctx->state = MP_STATE_COUNTDOWN;
-    _Ctx->countdownStart = SDL_GetTicks();
-    _Ctx->gameStartTime = _Ctx->countdownStart + 3000;
+    MP_Game_Restart(_Ctx);
 }
+
 
 // Toggle ready
+/* NOTE: Implementation moved to mp_client.c */
 void Multiplayer_ToggleReady(MultiplayerContext *_Ctx)
 {
-    if (!_Ctx || _Ctx->localPlayerIndex < 0)
-        return;
-
-    _Ctx->players[_Ctx->localPlayerIndex].ready = !_Ctx->players[_Ctx->localPlayerIndex].ready;
-
-    printf("🔵 multiplayer_toggle_ready() called! Player %d ready=%d\n",
-           _Ctx->localPlayerIndex, _Ctx->players[_Ctx->localPlayerIndex].ready);
-
-    // Send ready status
-    json_t *message = json_object();
-    json_object_set_new(message, "type", json_string("ready"));
-    json_object_set_new(message, "ready", json_boolean(_Ctx->players[_Ctx->localPlayerIndex].ready));
-
-    int rc = mpapi_game(_Ctx->api, message, NULL);
-    if (rc != MPAPI_OK)
-    {
-        printf("Failed to send ready status: error %d\n", rc);
-    }
-    else
-    {
-        printf("✓ Ready status sent: %s\n", _Ctx->players[_Ctx->localPlayerIndex].ready ? "READY" : "NOT READY");
-    }
-
-    json_decref(message);
+    MP_Client_ToggleReady(_Ctx);
 }
+
 
 // Check if all players ready
+/* NOTE: Implementation moved to mp_game.c */
 bool Multiplayer_AllReady(MultiplayerContext *_Ctx)
 {
-    if (!_Ctx)
-        return false;
-
-    int joinedCount = 0;
-    int readyCount = 0;
-
-    for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
-    {
-        if (_Ctx->players[i].joined)
-        {
-            joinedCount++;
-            if (_Ctx->players[i].ready)
-                readyCount++;
-        }
-    }
-
-    return joinedCount >= 2 && readyCount == joinedCount;
+    return MP_Game_AllReady(_Ctx);
 }
+
 
 // Get local player index
+/* NOTE: Implementation moved to mp_game.c */
 int Multiplayer_GetLocalPlayerIndex(MultiplayerContext *_Ctx)
 {
-    return _Ctx ? _Ctx->localPlayerIndex : -1;
+    return MP_Game_GetLocalPlayerIndex(_Ctx);
 }
+
 
 // Update countdown and initialize game when countdown finishes
+/* NOTE: Implementation moved to mp_game.c */
 void Multiplayer_UpdateCountdown(MultiplayerContext *_Ctx, unsigned int _CurrentTime)
 {
-    if (!_Ctx || _Ctx->state != MP_STATE_COUNTDOWN)
-        return;
-
-    // Check if countdown finished
-    if (_CurrentTime >= _Ctx->gameStartTime)
-    {
-        // For turn battle, go to TURN_PLAYING state
-        if (_Ctx->gameMode == MP_MODE_TURN_BATTLE)
-        {
-            _Ctx->state = MP_STATE_TURN_PLAYING;
-            printf("Countdown finished - starting turn battle attempt\n");
-            return;
-        }
-
-        // For 1VS1 mode, go to PLAYING state
-        _Ctx->state = MP_STATE_PLAYING;
-        _Ctx->lastMoveTime = _CurrentTime;
-
-        // Initialize snakes for both players
-        for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
-        {
-            if (_Ctx->players[i].joined)
-            {
-                Snake_Init(&_Ctx->players[i].snake);
-
-                // Position snakes on opposite sides
-                if (i == 0)
-                {
-                    _Ctx->players[i].snake.segments[0].x = GRID_WIDTH / 4;
-                }
-                else
-                {
-                    _Ctx->players[i].snake.segments[0].x = (GRID_WIDTH * 3) / 4;
-                    _Ctx->players[i].snake.direction = DIR_LEFT;
-                    _Ctx->players[i].snake.nextDirection = DIR_LEFT;
-                }
-
-                _Ctx->players[i].snake.segments[0].y = GRID_HEIGHT / 2;
-                for (int j = 1; j < _Ctx->players[i].snake.length; j++)
-                {
-                    _Ctx->players[i].snake.segments[j] = _Ctx->players[i].snake.segments[0];
-                    _Ctx->players[i].snake.segments[j].x += (i == 0 ? -j : j);
-                }
-
-                _Ctx->players[i].alive = true;
-
-                // Initialize combo system
-                _Ctx->players[i].comboCount = 0;
-                _Ctx->players[i].lastFoodTime = 0;
-                _Ctx->players[i].comboMultiplier = 1.0f;
-                _Ctx->players[i].score = 0;
-            }
-        }
-
-        // Spawn two food items for more intense gameplay
-        _Ctx->food[0].x = PLAYABLE_MIN_X + 5;
-        _Ctx->food[0].y = PLAYABLE_MIN_Y + 5;
-        _Ctx->food[1].x = PLAYABLE_MAX_X - 5;
-        _Ctx->food[1].y = PLAYABLE_MAX_Y - 5;
-    }
+    MP_Game_UpdateCountdown(_Ctx, _CurrentTime);
 }
+
 
 // Serialize state to JSON
 /* NOTE: Implementation moved to mp_network.c */
@@ -1051,155 +732,37 @@ int Multiplayer_BrowseGames(MultiplayerContext *_Ctx)
 // Turn Battle Functions
 // ============================================================================
 
+/* NOTE: Implementation moved to mp_turn_battle.c */
 void Multiplayer_StartTurnAttempt(MultiplayerContext *_Ctx)
 {
-    if (!_Ctx || _Ctx->gameMode != MP_MODE_TURN_BATTLE)
-        return;
-
-    // Initialize local game for this attempt
-    Game_Init(&_Ctx->localGame);
-    _Ctx->localGame.state = GAME_PLAYING;
-    _Ctx->localGame.selectedBackground = _Ctx->selectedBackground;
-    _Ctx->localGame.gameMode = _Ctx->turnBattleMode; // Apply selected mode (Classic or Power-Up)
-
-    // Start with countdown (same as 1VS1 mode)
-    _Ctx->state = MP_STATE_COUNTDOWN;
-    _Ctx->countdownStart = SDL_GetTicks();
-    _Ctx->gameStartTime = _Ctx->countdownStart + 3000; // 3 second countdown
-    _Ctx->attemptStartTime = _Ctx->gameStartTime; // Attempt starts after countdown
-
-    printf("Starting turn attempt %d/3 with countdown\n", _Ctx->currentAttempt + 1);
+    MP_TurnBattle_StartAttempt(_Ctx);
 }
 
+
+/* NOTE: Implementation moved to mp_turn_battle.c */
 void Multiplayer_FinishTurnAttempt(MultiplayerContext *_Ctx)
 {
-    if (!_Ctx || _Ctx->gameMode != MP_MODE_TURN_BATTLE)
-        return;
-
-    int localIdx = Multiplayer_GetLocalPlayerIndex(_Ctx);
-    if (localIdx < 0)
-        return;
-
-    // Record attempt results
-    TurnAttempt *attempt = &_Ctx->players[localIdx].attempts[_Ctx->currentAttempt];
-    attempt->score = _Ctx->localGame.snake.score;
-    attempt->length = _Ctx->localGame.snake.length;
-    attempt->survivalTime = SDL_GetTicks() - _Ctx->attemptStartTime;
-
-    _Ctx->currentAttempt++;
-    _Ctx->players[localIdx].completedAttempts = _Ctx->currentAttempt;
-
-    printf("Finished attempt %d - Score: %d, Length: %d, Time: %ums\n",
-           _Ctx->currentAttempt, attempt->score, attempt->length, attempt->survivalTime);
-
-    // Check if all 3 attempts are done
-    if (_Ctx->currentAttempt >= 3)
-    {
-        // Calculate best score
-        int bestScore = 0;
-        for (int i = 0; i < 3; i++)
-        {
-            if (_Ctx->players[localIdx].attempts[i].score > bestScore)
-                bestScore = _Ctx->players[localIdx].attempts[i].score;
-        }
-        _Ctx->players[localIdx].bestScore = bestScore;
-        _Ctx->players[localIdx].turnFinished = true;
-
-        // Submit results to host
-        Multiplayer_SubmitTurnResults(_Ctx);
-        _Ctx->state = MP_STATE_TURN_WAITING;
-
-        // If we're host and all players are now finished, show results immediately
-        if (_Ctx->isHost && Multiplayer_AllTurnsFinished(_Ctx))
-        {
-            Multiplayer_CalculateTurnWinner(_Ctx);
-            _Ctx->resultPageIndex = 0; // Start at winner
-            _Ctx->state = MP_STATE_TURN_RESULTS;
-
-            // Broadcast results state to all players
-            json_t *resultsMsg = json_object();
-            json_object_set_new(resultsMsg, "type", json_string("show_results"));
-            mpapi_game(_Ctx->api, resultsMsg, NULL);
-            json_decref(resultsMsg);
-        }
-    }
-    else
-    {
-        // Start next attempt
-        Multiplayer_StartTurnAttempt(_Ctx);
-    }
+    MP_TurnBattle_FinishAttempt(_Ctx);
 }
 
+
+/* NOTE: Implementation moved to mp_turn_battle.c */
 void Multiplayer_SubmitTurnResults(MultiplayerContext *_Ctx)
 {
-    if (!_Ctx || !_Ctx->api)
-        return;
-
-    int localIdx = Multiplayer_GetLocalPlayerIndex(_Ctx);
-    if (localIdx < 0)
-        return;
-
-    // Create results message
-    json_t *message = json_object();
-    json_object_set_new(message, "type", json_string("turn_results"));
-    json_object_set_new(message, "playerIndex", json_integer(localIdx));
-    json_object_set_new(message, "bestScore", json_integer(_Ctx->players[localIdx].bestScore));
-
-    // Add all attempt results
-    json_t *attemptsArray = json_array();
-    for (int i = 0; i < 3; i++)
-    {
-        json_t *attemptObj = json_object();
-        json_object_set_new(attemptObj, "score", json_integer(_Ctx->players[localIdx].attempts[i].score));
-        json_object_set_new(attemptObj, "length", json_integer(_Ctx->players[localIdx].attempts[i].length));
-        json_object_set_new(attemptObj, "survivalTime", json_integer(_Ctx->players[localIdx].attempts[i].survivalTime));
-        json_array_append_new(attemptsArray, attemptObj);
-    }
-    json_object_set_new(message, "attempts", attemptsArray);
-
-    mpapi_game(_Ctx->api, message, NULL);
-    json_decref(message);
-
-    printf("Submitted turn results - Best score: %d\n", _Ctx->players[localIdx].bestScore);
+    MP_TurnBattle_SubmitResults(_Ctx);
 }
 
+
+/* NOTE: Implementation moved to mp_turn_battle.c */
 bool Multiplayer_AllTurnsFinished(MultiplayerContext *_Ctx)
 {
-    if (!_Ctx)
-        return false;
-
-    for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
-    {
-        if (_Ctx->players[i].joined && !_Ctx->players[i].turnFinished)
-            return false;
-    }
-
-    return true;
+    return MP_TurnBattle_AllFinished(_Ctx);
 }
 
+
+/* NOTE: Implementation moved to mp_turn_battle.c */
 void Multiplayer_CalculateTurnWinner(MultiplayerContext *_Ctx)
 {
-    if (!_Ctx)
-        return;
-
-    int winnerIdx = -1;
-    int highestScore = -1;
-
-    for (int i = 0; i < MAX_MULTIPLAYER_PLAYERS; i++)
-    {
-        if (_Ctx->players[i].joined)
-        {
-            if (_Ctx->players[i].bestScore > highestScore)
-            {
-                highestScore = _Ctx->players[i].bestScore;
-                winnerIdx = i;
-            }
-        }
-    }
-
-    if (winnerIdx >= 0)
-    {
-        printf("Turn Battle Winner: %s with score %d\n",
-               _Ctx->players[winnerIdx].name, highestScore);
-    }
+    MP_TurnBattle_CalculateWinner(_Ctx);
 }
+

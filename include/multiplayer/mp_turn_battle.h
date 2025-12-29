@@ -1,26 +1,27 @@
-#ifndef __MP_TURN_BATTLE_H_
-#define __MP_TURN_BATTLE_H_
+/*
+ * mp_turn_battle.h - Turn battle mode implementation
+ * Part of SNEJK2D multiplayer refactoring (Phase 4)
+ */
+
+#ifndef MP_TURN_BATTLE_H
+#define MP_TURN_BATTLE_H
 
 #include "multiplayer.h"
+#include <stdbool.h>
 
-/* Turn battle mode - specific logic for turn-based multiplayer */
+/* Start a turn battle attempt (1 of 3) */
+void MP_TurnBattle_StartAttempt(MultiplayerContext *_Ctx);
 
-/* Start turn battle mode */
-void MP_TurnBattle_Start(MultiplayerContext *_Ctx);
-
-/* Start a new turn attempt */
-void MP_TurnBattle_StartAttempt(MultiplayerContext *_Ctx, int _AttemptNumber);
-
-/* Finish current turn attempt */
+/* Finish current turn attempt and record results */
 void MP_TurnBattle_FinishAttempt(MultiplayerContext *_Ctx);
 
-/* Calculate and show turn battle results */
-void MP_TurnBattle_ShowResults(MultiplayerContext *_Ctx);
+/* Submit turn battle results to host */
+void MP_TurnBattle_SubmitResults(MultiplayerContext *_Ctx);
 
-/* Move to next results page */
-void MP_TurnBattle_NextResultPage(MultiplayerContext *_Ctx);
+/* Check if all players finished their turns */
+bool MP_TurnBattle_AllFinished(MultiplayerContext *_Ctx);
 
-/* Move to previous results page */
-void MP_TurnBattle_PrevResultPage(MultiplayerContext *_Ctx);
+/* Calculate turn battle winner based on best scores */
+void MP_TurnBattle_CalculateWinner(MultiplayerContext *_Ctx);
 
-#endif
+#endif /* MP_TURN_BATTLE_H */
