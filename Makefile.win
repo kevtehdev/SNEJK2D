@@ -37,40 +37,77 @@ LDFLAGS=-L$(SDL2_DIR)/lib \
 	-lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lSDL2_mixer \
 	-lpthread -lws2_32 -liphlpapi -lrpcrt4 -lm -mwindows
 
-# Game source files
-GAME_SOURCES=$(SRC_DIR)/snake.c \
-             $(SRC_DIR)/game.c \
-             $(SRC_DIR)/renderer.c \
-             $(SRC_DIR)/audio.c \
-             $(SRC_DIR)/multiplayer.c \
-             $(SRC_DIR)/scoreboard.c \
-             $(SRC_DIR)/settings.c \
-             $(SRC_DIR)/input.c \
-             $(SRC_DIR)/main.c
+# Core source files
+CORE_SOURCES=$(SRC_DIR)/core/main.c \
+             $(SRC_DIR)/core/game.c \
+             $(SRC_DIR)/core/state_machine.c \
+             $(SRC_DIR)/core/event_system.c \
+             $(SRC_DIR)/core/runtime_config.c
+
+# Entity source files
+ENTITY_SOURCES=$(SRC_DIR)/entities/snake.c
+
+# Audio source files
+AUDIO_SOURCES=$(SRC_DIR)/audio/audio_system.c
+
+# Multiplayer source files
+MULTIPLAYER_SOURCES=$(SRC_DIR)/multiplayer/mp_core.c \
+                    $(SRC_DIR)/multiplayer/mp_network.c \
+                    $(SRC_DIR)/multiplayer/mp_host.c \
+                    $(SRC_DIR)/multiplayer/mp_client.c \
+                    $(SRC_DIR)/multiplayer/mp_game.c \
+                    $(SRC_DIR)/multiplayer/mp_turn_battle.c \
+                    $(SRC_DIR)/multiplayer/mp_message_queue.c
+
+# Utility source files
+UTILS_SOURCES=$(SRC_DIR)/utils/scoreboard.c \
+              $(SRC_DIR)/utils/settings.c \
+              $(SRC_DIR)/utils/logger.c \
+              $(SRC_DIR)/utils/debug_draw.c
+
+# UI source files
+UI_SOURCES=$(SRC_DIR)/ui/notifications.c
+
+# Rendering module source files
+RENDERING_SOURCES=$(SRC_DIR)/rendering/renderer_core.c \
+                  $(SRC_DIR)/rendering/renderer_background.c \
+                  $(SRC_DIR)/rendering/renderer_hud.c \
+                  $(SRC_DIR)/rendering/renderer_game.c \
+                  $(SRC_DIR)/rendering/renderer_effects.c \
+                  $(SRC_DIR)/rendering/renderer_menus.c \
+                  $(SRC_DIR)/rendering/renderer_multiplayer.c \
+                  $(SRC_DIR)/rendering/renderer_ui.c
+
+# Input module source files
+INPUT_SOURCES=$(SRC_DIR)/input/input_core.c \
+              $(SRC_DIR)/input/input_menu.c \
+              $(SRC_DIR)/input/input_gameplay.c \
+              $(SRC_DIR)/input/input_multiplayer.c
+
+# State module source files
+STATES_SOURCES=$(SRC_DIR)/states/state_loading.c \
+               $(SRC_DIR)/states/state_main_menu.c \
+               $(SRC_DIR)/states/state_mode_select.c \
+               $(SRC_DIR)/states/state_name_input.c \
+               $(SRC_DIR)/states/state_menu.c \
+               $(SRC_DIR)/states/state_playing.c \
+               $(SRC_DIR)/states/state_paused.c \
+               $(SRC_DIR)/states/state_game_over.c \
+               $(SRC_DIR)/states/state_scoreboard.c \
+               $(SRC_DIR)/states/state_options.c \
+               $(SRC_DIR)/states/state_multiplayer.c
 
 # mpapi source files
 MPAPI_SOURCES=$(MPAPI_DIR)/mpapi.c \
               $(wildcard $(MPAPI_DIR)/jansson/*.c)
 
 # All sources
-SOURCES=$(GAME_SOURCES) $(MPAPI_SOURCES)
+SOURCES=$(CORE_SOURCES) $(ENTITY_SOURCES) $(AUDIO_SOURCES) $(MULTIPLAYER_SOURCES) $(UTILS_SOURCES) \
+        $(UI_SOURCES) $(RENDERING_SOURCES) $(INPUT_SOURCES) $(STATES_SOURCES) $(MPAPI_SOURCES)
 
-# Game object files
-GAME_OBJECTS=$(BUILD_DIR)/snake.o \
-             $(BUILD_DIR)/game.o \
-             $(BUILD_DIR)/renderer.o \
-             $(BUILD_DIR)/audio.o \
-             $(BUILD_DIR)/multiplayer.o \
-             $(BUILD_DIR)/scoreboard.o \
-             $(BUILD_DIR)/settings.o \
-             $(BUILD_DIR)/input.o \
-             $(BUILD_DIR)/main.o
-
-# mpapi object files
-MPAPI_OBJECTS=$(patsubst $(MPAPI_DIR)/%.c,$(BUILD_DIR)/mpapi_%.o,$(MPAPI_SOURCES))
-
-# All object files
-OBJECTS=$(GAME_OBJECTS) $(MPAPI_OBJECTS)
+# Object files (simplified - will be placed in BUILD_DIR)
+OBJECTS=$(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(filter-out $(MPAPI_SOURCES),$(SOURCES))) \
+        $(patsubst $(MPAPI_DIR)/%.c,$(BUILD_DIR)/mpapi_%.o,$(MPAPI_SOURCES))
 
 # Executable name
 EXECUTABLE=snejk2d.exe
@@ -79,7 +116,7 @@ EXECUTABLE=snejk2d.exe
 all: $(EXECUTABLE)
 	@echo ""
 	@echo "✓ Windows build complete!"
-	@echo "Copy DLLs with: make copy-dlls"
+	@echo "Copy DLLs with: make -f Makefile.win copy-dlls"
 	@echo ""
 
 # Link object files
@@ -87,10 +124,58 @@ $(EXECUTABLE): $(OBJECTS)
 	@echo "Linking $(EXECUTABLE)..."
 	@$(CC) $(OBJECTS) -o $@ $(LDFLAGS)
 
-# Compile game source files
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+# Compile core source files
+$(BUILD_DIR)/core/%.o: $(SRC_DIR)/core/%.c
 	@echo "Compiling $<..."
-	@mkdir -p $(BUILD_DIR)
+	@mkdir -p $(BUILD_DIR)/core
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+# Compile entity source files
+$(BUILD_DIR)/entities/%.o: $(SRC_DIR)/entities/%.c
+	@echo "Compiling $<..."
+	@mkdir -p $(BUILD_DIR)/entities
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+# Compile audio source files
+$(BUILD_DIR)/audio/%.o: $(SRC_DIR)/audio/%.c
+	@echo "Compiling $<..."
+	@mkdir -p $(BUILD_DIR)/audio
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+# Compile multiplayer source files
+$(BUILD_DIR)/multiplayer/%.o: $(SRC_DIR)/multiplayer/%.c
+	@echo "Compiling $<..."
+	@mkdir -p $(BUILD_DIR)/multiplayer
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+# Compile utils source files
+$(BUILD_DIR)/utils/%.o: $(SRC_DIR)/utils/%.c
+	@echo "Compiling $<..."
+	@mkdir -p $(BUILD_DIR)/utils
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+# Compile UI source files
+$(BUILD_DIR)/ui/%.o: $(SRC_DIR)/ui/%.c
+	@echo "Compiling $<..."
+	@mkdir -p $(BUILD_DIR)/ui
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+# Compile rendering source files
+$(BUILD_DIR)/rendering/%.o: $(SRC_DIR)/rendering/%.c
+	@echo "Compiling $<..."
+	@mkdir -p $(BUILD_DIR)/rendering
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+# Compile input source files
+$(BUILD_DIR)/input/%.o: $(SRC_DIR)/input/%.c
+	@echo "Compiling $<..."
+	@mkdir -p $(BUILD_DIR)/input
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+# Compile state source files
+$(BUILD_DIR)/states/%.o: $(SRC_DIR)/states/%.c
+	@echo "Compiling $<..."
+	@mkdir -p $(BUILD_DIR)/states
 	@$(CC) $(CFLAGS) -c $< -o $@
 
 # Compile mpapi source files

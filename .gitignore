@@ -25,6 +25,9 @@ release_tmp/
 
 # Runtime files
 settings.conf
+snejk2d.conf
+snejk2d.log
+*.log
 
 # Release artifacts (use GitHub Releases instead)
 release/

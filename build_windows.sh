@@ -5,65 +5,48 @@ set -e
 
 echo "Building SNEJK2D for Windows..."
 
-# SDL2 paths in /tmp
-SDL2_BASE="/tmp/SDL2-2.30.0/x86_64-w64-mingw32"
-SDL2_IMAGE_BASE="/tmp/SDL2_image-2.8.2/x86_64-w64-mingw32"
-SDL2_MIXER_BASE="/tmp/SDL2_mixer-2.8.0/x86_64-w64-mingw32"
-SDL2_TTF_BASE="/tmp/SDL2_ttf-2.22.0/x86_64-w64-mingw32"
+# Check if mingw is installed
+if ! command -v x86_64-w64-mingw32-gcc &> /dev/null; then
+    echo "ERROR: MinGW cross-compiler not found"
+    echo "Install with: sudo apt-get install mingw-w64"
+    exit 1
+fi
 
-# Compiler
-CC=x86_64-w64-mingw32-gcc
+# Setup Windows SDL2 libraries if needed
+if [ ! -d "/tmp/win-libs" ]; then
+    echo "Setting up Windows SDL2 libraries..."
+    mkdir -p /tmp/win-libs
 
-# Include paths
-INCLUDES="-Iinclude"
-INCLUDES="$INCLUDES -I$SDL2_BASE/include -I$SDL2_BASE/include/SDL2"
-INCLUDES="$INCLUDES -I$SDL2_IMAGE_BASE/include -I$SDL2_IMAGE_BASE/include/SDL2"
-INCLUDES="$INCLUDES -I$SDL2_MIXER_BASE/include -I$SDL2_MIXER_BASE/include/SDL2"
-INCLUDES="$INCLUDES -I$SDL2_TTF_BASE/include -I$SDL2_TTF_BASE/include/SDL2"
+    # Download and extract SDL2 libraries (if not already present)
+    # Note: You'll need to manually download these once
+    echo "Please ensure SDL2 Windows libraries are in /tmp/win-libs/"
+    echo "Required: SDL2, SDL2_image, SDL2_mixer, SDL2_ttf"
+fi
 
-# Library paths
-LIBS="-L$SDL2_BASE/lib"
-LIBS="$LIBS -L$SDL2_IMAGE_BASE/lib"
-LIBS="$LIBS -L$SDL2_MIXER_BASE/lib"
-LIBS="$LIBS -L$SDL2_TTF_BASE/lib"
-LIBS="$LIBS -lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf"
-LIBS="$LIBS -lws2_32 -liphlpapi -lpthread -mwindows"
+# Build using Makefile.win
+echo "Building with Makefile.win..."
+make -f Makefile.win clean
+make -f Makefile.win
 
-# Compiler flags
-CFLAGS="-O2 -Wall -std=c11"
-
-# Source files
-SOURCES="src/main.c src/game.c src/snake.c src/renderer.c src/audio.c"
-SOURCES="$SOURCES src/multiplayer.c src/scoreboard.c src/settings.c src/input.c"
-SOURCES="$SOURCES src/mpapi/c_client/libs/mpapi.c"
-SOURCES="$SOURCES src/mpapi/c_client/libs/jansson/*.c"
-
-# Output
-OUTPUT="SNEJK2D.exe"
-
-echo "Compiling source files..."
-$CC $CFLAGS $INCLUDES $SOURCES $LIBS -o $OUTPUT
-
-if [ -f "$OUTPUT" ]; then
-    echo "✓ Build complete: $OUTPUT"
+if [ -f "snejk2d.exe" ]; then
+    echo "✓ Build complete: snejk2d.exe"
 
     # Copy DLLs
     echo "Copying required DLLs..."
-    cp $SDL2_BASE/bin/SDL2.dll .
-    cp $SDL2_IMAGE_BASE/bin/*.dll .
-    cp $SDL2_MIXER_BASE/bin/*.dll .
-    cp $SDL2_TTF_BASE/bin/*.dll .
-
-    # Copy libwinpthread-1.dll (required for threading)
-    if [ -f "win64_deps/dlls/libwinpthread-1.dll" ]; then
-        cp win64_deps/dlls/libwinpthread-1.dll .
-        echo "✓ Copied libwinpthread-1.dll"
+    if [ -d "win64_deps/dlls" ]; then
+        cp win64_deps/dlls/*.dll .
+        echo "✓ DLLs copied"
+    else
+        echo "Warning: win64_deps/dlls/ not found"
+        echo "You'll need to manually copy SDL2 DLLs"
     fi
 
+    echo ""
     echo "✓ Windows build complete!"
     echo ""
     echo "Files created:"
-    ls -lh SNEJK2D.exe *.dll | awk '{print "  " $9 " (" $5 ")"}'
+    ls -lh snejk2d.exe 2>/dev/null | awk '{print "  " $9 " (" $5 ")"}'
+    ls -lh *.dll 2>/dev/null | awk '{print "  " $9 " (" $5 ")"}' | head -5
 else
     echo "✗ Build failed!"
     exit 1
