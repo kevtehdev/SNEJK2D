@@ -2,9 +2,9 @@
 #define __RENDERER_H_
 
 #include "config.h"
-#include "game.h"
-#include "multiplayer.h"
-#include "scoreboard.h"
+#include "core/game.h"
+#include "multiplayer/multiplayer.h"
+#include "utils/scoreboard.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <stdbool.h>

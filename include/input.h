@@ -1,9 +1,9 @@
 #ifndef __INPUT_H_
 #define __INPUT_H_
 
-#include "game.h"
-#include "multiplayer.h"
-#include "scoreboard.h"
+#include "core/game.h"
+#include "multiplayer/multiplayer.h"
+#include "utils/scoreboard.h"
 #include <SDL2/SDL.h>
 #include <stdbool.h>
 
