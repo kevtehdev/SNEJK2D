@@ -40,3 +40,7 @@ SDL2_*/
 
 # Scoreboard data
 scoreboard.json
+
+#old files
+src/input.c.old
+src/renderer.c.old
