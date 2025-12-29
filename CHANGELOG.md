@@ -1,5 +1,17 @@
 # Changelog
 
+## [v1.4.2] - 2025-12-29
+
+### Fixed
+- Windows build with correct refactored code
+  - Previous Windows releases (v1.4.0, v1.4.1) contained pre-refactor code with bugs
+  - Black backgrounds in Turn Battle lobby - fixed
+  - Missing chat sounds - fixed
+  - All Windows packages now built from latest refactored codebase
+
+### Technical
+- Both Linux and Windows builds now properly using refactored multiplayer modules
+
 ## [v1.4.1] - 2025-12-29
 
 ### Performance
