@@ -134,3 +134,101 @@
 [2025-12-29 11:14:06] INFO === SNEJK2D Shutdown Complete ===
 ========== Session End ==========
 
+
+========== New Session ==========
+[2025-12-29 11:18:29] INFO === SNEJK2D Starting ===
+[2025-12-29 11:18:29] INFO [RuntimeConfig] No config file found at snejk2d.conf, using defaults
+[2025-12-29 11:18:29] INFO SDL initialized successfully
+[2025-12-29 11:18:29] INFO Renderer initialized successfully
+[2025-12-29 11:18:29] INFO Audio system initialized
+[2025-12-29 11:18:29] INFO Audio subscribed to event system
+[2025-12-29 11:18:29] INFO Debug visualization system initialized
+[2025-12-29 11:18:29] INFO State machine initialized
+[2025-12-29 11:20:18] INFO Shutting down...
+[2025-12-29 11:20:18] INFO === SNEJK2D Shutdown Complete ===
+========== Session End ==========
+
+
+========== New Session ==========
+[2025-12-29 13:00:32] INFO === SNEJK2D Starting ===
+[2025-12-29 13:00:32] INFO [RuntimeConfig] No config file found at snejk2d.conf, using defaults
+[2025-12-29 13:00:32] INFO SDL initialized successfully
+[2025-12-29 13:00:32] INFO Renderer initialized successfully
+[2025-12-29 13:00:33] INFO Audio system initialized
+[2025-12-29 13:00:33] INFO Audio subscribed to event system
+[2025-12-29 13:00:33] INFO Debug visualization system initialized
+[2025-12-29 13:00:33] INFO State machine initialized
+[2025-12-29 13:02:30] INFO Shutting down...
+[2025-12-29 13:02:30] INFO === SNEJK2D Shutdown Complete ===
+========== Session End ==========
+
+
+========== New Session ==========
+[2025-12-29 13:05:50] INFO === SNEJK2D Starting ===
+[2025-12-29 13:05:50] INFO [RuntimeConfig] No config file found at snejk2d.conf, using defaults
+[2025-12-29 13:05:50] INFO SDL initialized successfully
+[2025-12-29 13:05:51] INFO Renderer initialized successfully
+[2025-12-29 13:05:51] INFO Audio system initialized
+[2025-12-29 13:05:51] INFO Audio subscribed to event system
+[2025-12-29 13:05:51] INFO Debug visualization system initialized
+[2025-12-29 13:05:51] INFO State machine initialized
+[2025-12-29 13:06:02] INFO Shutting down...
+[2025-12-29 13:06:02] INFO === SNEJK2D Shutdown Complete ===
+========== Session End ==========
+
+
+========== New Session ==========
+[2025-12-29 13:15:09] INFO === SNEJK2D Starting ===
+[2025-12-29 13:15:09] INFO [RuntimeConfig] No config file found at snejk2d.conf, using defaults
+[2025-12-29 13:15:09] INFO SDL initialized successfully
+[2025-12-29 13:15:09] INFO Renderer initialized successfully
+[2025-12-29 13:15:09] INFO Audio system initialized
+[2025-12-29 13:15:09] INFO Audio subscribed to event system
+[2025-12-29 13:15:09] INFO Debug visualization system initialized
+[2025-12-29 13:15:09] INFO State machine initialized
+[2025-12-29 13:18:26] INFO Shutting down...
+[2025-12-29 13:18:26] INFO === SNEJK2D Shutdown Complete ===
+========== Session End ==========
+
+
+========== New Session ==========
+[2025-12-29 13:20:38] INFO === SNEJK2D Starting ===
+[2025-12-29 13:20:38] INFO [RuntimeConfig] No config file found at snejk2d.conf, using defaults
+[2025-12-29 13:20:38] INFO SDL initialized successfully
+[2025-12-29 13:20:38] INFO Renderer initialized successfully
+[2025-12-29 13:20:38] INFO Audio system initialized
+[2025-12-29 13:20:38] INFO Audio subscribed to event system
+[2025-12-29 13:20:38] INFO Debug visualization system initialized
+[2025-12-29 13:20:38] INFO State machine initialized
+[2025-12-29 13:27:32] INFO Shutting down...
+[2025-12-29 13:27:32] INFO === SNEJK2D Shutdown Complete ===
+========== Session End ==========
+
+
+========== New Session ==========
+[2025-12-29 13:29:59] INFO === SNEJK2D Starting ===
+[2025-12-29 13:29:59] INFO [RuntimeConfig] No config file found at snejk2d.conf, using defaults
+[2025-12-29 13:29:59] INFO SDL initialized successfully
+[2025-12-29 13:29:59] INFO Renderer initialized successfully
+[2025-12-29 13:29:59] INFO Audio system initialized
+[2025-12-29 13:29:59] INFO Audio subscribed to event system
+[2025-12-29 13:29:59] INFO Debug visualization system initialized
+[2025-12-29 13:29:59] INFO State machine initialized
+
+========== New Session ==========
+[2025-12-29 13:30:03] INFO === SNEJK2D Starting ===
+[2025-12-29 13:30:03] INFO [RuntimeConfig] No config file found at snejk2d.conf, using defaults
+[2025-12-29 13:30:03] INFO SDL initialized successfully
+[2025-12-29 13:30:03] INFO Renderer initialized successfully
+[2025-12-29 13:30:03] INFO Audio system initialized
+[2025-12-29 13:30:03] INFO Audio subscribed to event system
+[2025-12-29 13:30:03] INFO Debug visualization system initialized
+[2025-12-29 13:30:03] INFO State machine initialized
+[2025-12-29 13:32:24] INFO Shutting down...
+[2025-12-29 13:32:24] INFO === SNEJK2D Shutdown Complete ===
+========== Session End ==========
+
+[2025-12-29 13:32:27] INFO Shutting down...
+[2025-12-29 13:32:27] INFO === SNEJK2D Shutdown Complete ===
+========== Session End ==========
+
