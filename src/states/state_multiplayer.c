@@ -18,18 +18,7 @@ static void MultiplayerState_Update(StateContext *_Ctx, unsigned int _DeltaTime)
 
     MultiplayerContext *mpCtx = *_Ctx->mpCtx;
     if (!mpCtx)
-    {
-        printf("[MultiplayerState] WARNING: mpCtx is NULL!\n");
         return;
-    }
-
-    // Debug: Print state every 60 frames (roughly once per second)
-    static int debugCounter = 0;
-    if (++debugCounter >= 60)
-    {
-        printf("[MultiplayerState] Update - mpCtx->state=%d, isHost=%d\n", mpCtx->state, mpCtx->isHost);
-        debugCounter = 0;
-    }
 
     // Update host logic
     if (mpCtx->isHost && mpCtx->state == MP_STATE_PLAYING)
@@ -40,28 +29,16 @@ static void MultiplayerState_Update(StateContext *_Ctx, unsigned int _DeltaTime)
     // Update turn battle local game
     if (mpCtx->state == MP_STATE_TURN_PLAYING)
     {
-        printf("[MultiplayerState] Updating turn battle local game\n");
         Game_Update(&mpCtx->localGame);
 
         // Check if player died
         if (mpCtx->localGame.state == GAME_OVER)
         {
-            printf("[MultiplayerState] Player died, finishing turn attempt\n");
             Multiplayer_FinishTurnAttempt(mpCtx);
         }
     }
 
     // Update countdown
-    if (mpCtx->state == MP_STATE_COUNTDOWN)
-    {
-        static int countdownDebug = 0;
-        if (++countdownDebug >= 60)
-        {
-            printf("[MultiplayerState] COUNTDOWN: currentTime=%u, gameStartTime=%u, diff=%d\n",
-                   _Ctx->currentTime, mpCtx->gameStartTime, (int)(_Ctx->currentTime - mpCtx->gameStartTime));
-            countdownDebug = 0;
-        }
-    }
     Multiplayer_UpdateCountdown(mpCtx, _Ctx->currentTime);
 }
 
