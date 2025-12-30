@@ -4,7 +4,7 @@ snake game with multiplayer. nothing fancy, just works.
 
 ## what is this
 
-reimagined snake built with SDL2 in C. started as a weekend project, turned into something i actually wanted to play with friends.
+reimagined snake built with SDL2 in C
 
 features:
 - classic snake mechanics (eat, grow, don't hit walls)
