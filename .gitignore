@@ -47,3 +47,7 @@ scoreboard.json
 #old files
 src/input.c.old
 src/renderer.c.old
+
+
+# release script
+create_release.sh

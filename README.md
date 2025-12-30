@@ -84,7 +84,9 @@ SNEJK2D_NO_AUDIO=1 ./snejk2d
 
 ## credits
 
-code is mine, mit license.
+the game code is mine, mit license.
+
+multiplayer api is mpapi https://github.com/robin-onvo/mpapi
 
 assets (backgrounds, music, fonts) are from various creators. full attribution in `assets/ASSETS_LICENSE.md`.
 
