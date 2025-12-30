@@ -95,4 +95,3 @@ assets (backgrounds, music, fonts) are from various creators. full attribution i
 - font is press start 2p from google fonts
 - medals by buch
 
-made this because i wanted to play snake with friends online and everything else was either too complicated or wanted my email address.
